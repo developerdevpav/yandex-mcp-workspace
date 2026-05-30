@@ -1,0 +1,27 @@
+# syntax=docker/dockerfile:1
+
+# Runtime-образ: ожидает заранее собранный JAR (mvn package или CI artifact).
+# Для сборки с Maven внутри Docker используйте Dockerfile.
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+ARG MCP_MODULE=yandex-mcp-workspace-tracker
+
+LABEL org.opencontainers.image.title="yandex-mcp-workspace" \
+      org.opencontainers.image.description="Independent MCP server for Yandex Tracker or Yandex Wiki" \
+      org.opencontainers.image.source="https://github.com/developerdevpav/yandex-mcp-workspace" \
+      org.opencontainers.image.licenses="Apache-2.0"
+
+ENV YANDEX_TOKEN_STORE_PATH=/data/tokens.json
+
+VOLUME ["/data"]
+
+COPY ${MCP_MODULE}/target/${MCP_MODULE}-*.jar /app/app.jar
+COPY docker/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh \
+    && useradd --uid 1001 --no-create-home --home-dir /app --shell /usr/sbin/nologin mcp \
+    && mkdir -p /data \
+    && chown -R mcp:mcp /app /data
+USER mcp
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["serve"]

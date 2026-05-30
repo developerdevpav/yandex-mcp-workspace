@@ -32,15 +32,24 @@ java -jar yandex-mcp-workspace-tracker/target/yandex-mcp-workspace-tracker-0.1.0
 
 ## Docker
 
-Сборка образа Tracker (из корня репозитория):
+Рекомендуемый способ — сначала собрать JAR, затем упаковать runtime-образ (`Dockerfile.runtime`):
+
+```bash
+mvn -DskipTests package
+
+docker build -f Dockerfile.runtime \
+  --build-arg MCP_MODULE=yandex-mcp-workspace-tracker \
+  -t yandex-mcp-workspace-tracker:local .
+
+docker build -f Dockerfile.runtime \
+  --build-arg MCP_MODULE=yandex-mcp-workspace-wiki \
+  -t yandex-mcp-workspace-wiki:local .
+```
+
+Если Maven на машине нет, можно собрать всё внутри Docker (`Dockerfile`):
 
 ```bash
 docker build --build-arg MCP_MODULE=yandex-mcp-workspace-tracker -t yandex-mcp-workspace-tracker:local .
-```
-
-Сборка образа Wiki:
-
-```bash
 docker build --build-arg MCP_MODULE=yandex-mcp-workspace-wiki -t yandex-mcp-workspace-wiki:local .
 ```
 
@@ -48,8 +57,8 @@ docker build --build-arg MCP_MODULE=yandex-mcp-workspace-wiki -t yandex-mcp-work
 
 - **CI** (`.github/workflows/ci.yml`) — `mvn test` на push/PR в `main`/`master`.
 - **Release** (`.github/workflows/release.yml`) — по тегу `v*`:
-  - тесты и сборка JAR;
-  - публикация образов `ghcr.io/<owner>/<repo>-tracker` и `ghcr.io/<owner>/<repo>-wiki` для `linux/amd64` и `linux/arm64`;
+  - сборка JAR без тестов (тесты — в CI);
+  - параллельная публикация образов `ghcr.io/<owner>/<repo>-tracker` и `ghcr.io/<owner>/<repo>-wiki` из `Dockerfile.runtime` для `linux/amd64` и `linux/arm64`;
   - GitHub Release с артефактами JAR.
 
 При репозитории `developerdevpav/yandex-mcp-workspace` образы:

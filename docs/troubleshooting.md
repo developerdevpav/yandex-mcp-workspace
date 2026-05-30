@@ -9,7 +9,7 @@
 **Решение:**
 
 1. Обновите образ после релиза с multi-arch (`linux/amd64`, `linux/arm64`), или
-2. Соберите локально: `docker build --build-arg MCP_MODULE=yandex-mcp-workspace-tracker -t yandex-mcp-workspace-tracker:local .`, или
+2. Соберите локально: `mvn -DskipTests package && docker build -f Dockerfile.runtime --build-arg MCP_MODULE=yandex-mcp-workspace-tracker -t yandex-mcp-workspace-tracker:local .`, или
 3. Временно: `docker run --platform linux/amd64 ...` (медленнее из-за эмуляции).
 
 ## Таймаут MCP-клиента при старте
