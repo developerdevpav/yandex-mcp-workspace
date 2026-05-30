@@ -27,8 +27,6 @@ enum class OrgType {
  * @property clientSecret секретный ключ приложения Яндекс OAuth (`client_secret`)
  * @property orgId идентификатор организации для заголовка `X-Org-ID`/`X-Cloud-Org-ID`
  * @property orgType тип организации, определяющий имя заголовка идентификатора организации
- * @property tracker настройки API Tracker
- * @property wiki настройки API Wiki
  * @property oauth настройки OAuth-сервиса Яндекса
  * @property tokenStorePath путь к файлу хранения токенов в подключённом томе
  * @property readOnly режим только для чтения: при `true` изменяющие инструменты отключены
@@ -42,31 +40,11 @@ data class YandexProperties(
     val clientSecret: String = "",
     val orgId: String = "",
     val orgType: OrgType = OrgType.YANDEX_360,
-    val tracker: TrackerProperties = TrackerProperties(),
-    val wiki: WikiProperties = WikiProperties(),
     val oauth: OAuthProperties = OAuthProperties(),
     val tokenStorePath: String = "/data/tokens.json",
     val readOnly: Boolean = false,
     val retry: RetryProperties = RetryProperties(),
 ) {
-    /**
-     * Настройки API Yandex Tracker.
-     *
-     * @property baseUrl базовый адрес API Tracker
-     */
-    data class TrackerProperties(
-        val baseUrl: String = "https://api.tracker.yandex.net",
-    )
-
-    /**
-     * Настройки API Yandex Wiki.
-     *
-     * @property baseUrl базовый адрес API Wiki
-     */
-    data class WikiProperties(
-        val baseUrl: String = "https://api.wiki.yandex.net",
-    )
-
     /**
      * Настройки сервиса авторизации Яндекс OAuth.
      *

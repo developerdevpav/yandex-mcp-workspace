@@ -25,13 +25,9 @@ class YandexPropertiesTest {
     }
 
     @Test
-    @DisplayName("Значения по умолчанию указывают на публичные адреса API Яндекса")
-    fun `default base urls point to yandex public api`() {
-        val properties = YandexProperties()
-
-        assertThat(properties.tracker.baseUrl).isEqualTo("https://api.tracker.yandex.net")
-        assertThat(properties.wiki.baseUrl).isEqualTo("https://api.wiki.yandex.net")
-        assertThat(properties.oauth.baseUrl).isEqualTo("https://oauth.yandex.com")
+    @DisplayName("Адрес OAuth по умолчанию указывает на публичный сервис Яндекса")
+    fun `default oauth base url points to yandex public api`() {
+        assertThat(YandexProperties().oauth.baseUrl).isEqualTo("https://oauth.yandex.com")
     }
 
     @Test

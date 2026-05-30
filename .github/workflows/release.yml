@@ -61,7 +61,7 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
-          build-args: MCP_MODULE=yandex-mcp-tracker
+          build-args: MCP_MODULE=yandex-mcp-workspace-tracker
           tags: ${{ steps.meta-tracker.outputs.tags }}
           labels: ${{ steps.meta-tracker.outputs.labels }}
           cache-from: type=gha
@@ -84,7 +84,7 @@ jobs:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
-          build-args: MCP_MODULE=yandex-mcp-wiki
+          build-args: MCP_MODULE=yandex-mcp-workspace-wiki
           tags: ${{ steps.meta-wiki.outputs.tags }}
           labels: ${{ steps.meta-wiki.outputs.labels }}
           cache-from: type=gha
@@ -95,7 +95,7 @@ jobs:
         with:
           generate_release_notes: true
           files: |
-            yandex-mcp-tracker/target/yandex-mcp-tracker-*.jar
-            yandex-mcp-wiki/target/yandex-mcp-wiki-*.jar
+            yandex-mcp-workspace-tracker/target/yandex-mcp-workspace-tracker-*.jar
+            yandex-mcp-workspace-wiki/target/yandex-mcp-workspace-wiki-*.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

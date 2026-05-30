@@ -14,14 +14,16 @@
     <groupId>com.sorface.mcp</groupId>
     <artifactId>yandex-mcp-workspace</artifactId>
     <version>0.1.0-SNAPSHOT</version>
+
     <packaging>pom</packaging>
+
     <name>yandex-mcp-workspace</name>
-    <description>MCP server for Yandex Tracker and Yandex Wiki</description>
+    <description>MCP workspace for Yandex Tracker and Yandex Wiki</description>
 
     <modules>
         <module>yandex-mcp-core</module>
-        <module>yandex-mcp-tracker</module>
-        <module>yandex-mcp-wiki</module>
+        <module>yandex-mcp-workspace-tracker</module>
+        <module>yandex-mcp-workspace-wiki</module>
     </modules>
 
     <properties>
@@ -49,12 +51,12 @@
             </dependency>
             <dependency>
                 <groupId>com.sorface.mcp</groupId>
-                <artifactId>yandex-mcp-tracker</artifactId>
+                <artifactId>yandex-mcp-workspace-tracker</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.sorface.mcp</groupId>
-                <artifactId>yandex-mcp-wiki</artifactId>
+                <artifactId>yandex-mcp-workspace-wiki</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>

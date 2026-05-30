@@ -44,49 +44,4 @@ class HttpClientConfig {
             .baseUrl(properties.oauth.baseUrl)
             .build()
 
-    /**
-     * HTTP-клиент для обращения к API Yandex Tracker.
-     *
-     * Базовый адрес берётся из настроек, а заголовки авторизации (`Authorization: OAuth`)
-     * и идентификатора организации (`X-Org-ID`/`X-Cloud-Org-ID`) добавляет интерсептор
-     * [YandexApiAuthInterceptor] на каждый запрос.
-     *
-     * @param properties настройки подключения с базовым адресом API Tracker
-     * @param authInterceptor интерсептор, добавляющий заголовки авторизации и организации
-     * @param retryInterceptor интерсептор повторных запросов; регистрируется последним
-     */
-    @Bean
-    fun trackerRestClient(
-        properties: YandexProperties,
-        authInterceptor: YandexApiAuthInterceptor,
-        retryInterceptor: RetryingHttpRequestInterceptor,
-    ): RestClient =
-        RestClient.builder()
-            .baseUrl(properties.tracker.baseUrl)
-            .requestInterceptor(authInterceptor)
-            .requestInterceptor(retryInterceptor)
-            .build()
-
-    /**
-     * HTTP-клиент для обращения к API Yandex Wiki.
-     *
-     * Базовый адрес берётся из настроек, а заголовки авторизации (`Authorization: OAuth`)
-     * и идентификатора организации (`X-Org-ID`/`X-Cloud-Org-ID`) добавляет интерсептор
-     * [YandexApiAuthInterceptor] на каждый запрос.
-     *
-     * @param properties настройки подключения с базовым адресом API Wiki
-     * @param authInterceptor интерсептор, добавляющий заголовки авторизации и организации
-     * @param retryInterceptor интерсептор повторных запросов; регистрируется последним
-     */
-    @Bean
-    fun wikiRestClient(
-        properties: YandexProperties,
-        authInterceptor: YandexApiAuthInterceptor,
-        retryInterceptor: RetryingHttpRequestInterceptor,
-    ): RestClient =
-        RestClient.builder()
-            .baseUrl(properties.wiki.baseUrl)
-            .requestInterceptor(authInterceptor)
-            .requestInterceptor(retryInterceptor)
-            .build()
 }

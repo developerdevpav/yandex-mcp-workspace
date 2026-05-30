@@ -1,71 +1,51 @@
-# Возможности MCP-сервера для Yandex Tracker и Yandex Wiki
+# Возможности MCP-серверов
 
-## Содержание
+| Сервер | Модуль | Образ | Инструментов |
+|---|---|---|---|
+| Tracker | `yandex-mcp-workspace-tracker` | `ghcr.io/developerdevpav/yandex-mcp-workspace-tracker:latest` | 39 |
+| Wiki | `yandex-mcp-workspace-wiki` | `ghcr.io/developerdevpav/yandex-mcp-workspace-wiki:latest` | 31 |
 
-- [Краткое описание](#краткое-описание)
-- [Что такое MCP-сервер в этом проекте](#что-такое-mcp-сервер-в-этом-проекте)
-- [Сводка по составу инструментов](#сводка-по-составу-инструментов)
-- [Модель авторизации](#модель-авторизации)
-- [Порядок реализации](#порядок-реализации)
-- [Связанные документы](#связанные-документы)
-- [Открытые вопросы](#открытые-вопросы)
+Обзор workspace и конфигурация — [../overview.md](../overview.md), [../configuration.md](../configuration.md).
 
-## Краткое описание
+## Общие инструменты
 
-Этот раздел документации фиксирует решение о возможностях MCP-сервера: какие действия с Yandex Tracker и Yandex Wiki будут доступны ИИ-агенту в виде инструментов. Решение по составу — основа для дальнейшей реализации.
+| Инструмент | Назначение |
+|---|---|
+| `system_ping` | Проверка доступности (`pong`) |
+| `system_server_info` | Режим: read-write или read-only |
+| `yandex_auth_status` | Состояние OAuth без секретов |
 
-## Что такое MCP-сервер в этом проекте
+## Tracker
 
-MCP-сервер — это программа-посредник между ИИ-агентом и REST API Яндекса. Агент не знает про HTTP-запросы и токены: он вызывает понятные инструменты (например, «получить задачу» или «создать страницу»), а сервер сам обращается к API, добавляет авторизацию и возвращает результат.
+| Группа | Инструменты |
+|---|---|
+| Пользователь | `tracker_myself`, `tracker_user_list`, `tracker_user_get` |
+| Задачи | `tracker_issue_get`, `tracker_issue_search`, `tracker_issue_count`, `tracker_issue_create`, `tracker_issue_update`, `tracker_issue_move`, `tracker_issue_changelog` |
+| Переходы | `tracker_issue_transitions_list`, `tracker_issue_transition_execute` |
+| Очереди | `tracker_queue_list`, `tracker_queue_get`, `tracker_queue_field_list` |
+| Справочники | `tracker_issuetype_list`, `tracker_priority_list`, `tracker_status_list`, `tracker_resolution_list`, `tracker_field_list`, `tracker_field_get` |
+| Комментарии | `tracker_comment_list`, `tracker_comment_add`, `tracker_comment_update`, `tracker_comment_delete` |
+| Связи | `tracker_link_list`, `tracker_link_create`, `tracker_link_delete` |
+| Чек-лист | `tracker_checklist_list`, `tracker_checklist_add`, `tracker_checklist_update`, `tracker_checklist_delete` |
+| Worklog | `tracker_worklog_list`, `tracker_worklog_add`, `tracker_worklog_update`, `tracker_worklog_delete` |
 
-Сервер работает по транспорту stdio (обмен через стандартный ввод-вывод) и распространяется как Docker-образ.
+Подробно: [yandex-tracker-capabilities.md](./yandex-tracker-capabilities.md).
 
-## Сводка по составу инструментов
+## Wiki
 
-Ниже — итоговые ориентиры по количеству инструментов. Точный список с методами API приведён в отдельных документах.
+| Группа | Инструменты |
+|---|---|
+| Страницы | `wiki_page_get_by_slug`, `wiki_page_get_by_id`, `wiki_page_get_descendants`, `wiki_page_get_resources`, `wiki_page_create`, `wiki_page_update`, `wiki_page_delete`, `wiki_page_recover`, `wiki_page_clone`, `wiki_page_append_content` |
+| Комментарии | `wiki_page_comments_list`, `wiki_page_comment_add` |
+| Вложения | `wiki_page_attachments_list`, `wiki_page_attachment_upload`, `wiki_page_attachment_attach` |
+| Таблицы | `wiki_grid_get`, `wiki_page_grids_list`, `wiki_grid_create`, `wiki_grid_update`, `wiki_grid_delete`, `wiki_grid_clone`, `wiki_grid_add_rows`, `wiki_grid_delete_rows`, `wiki_grid_move_row`, `wiki_grid_add_columns`, `wiki_grid_delete_columns`, `wiki_grid_move_column`, `wiki_grid_update_cells` |
 
+Подробно: [yandex-wiki-capabilities.md](./yandex-wiki-capabilities.md).
 
-| Сервис         | Группы инструментов                                                                                                                                       | Примерное число инструментов | Чтение | Изменение |
-| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ------ | --------- |
-| Yandex Tracker | issues, comments, links, checklist, worklog, attachments, queues, boards/sprints, components, versions, fields, dictionaries, users, bulkchange, entities | около 60                     | да     | да        |
-| Yandex Wiki    | pages, content, comments, attachments, grids, rows, columns, cells                                                                                        | около 25                     | да     | да        |
+## Read-only
 
+`YANDEX_READ_ONLY=true` — изменяющие инструменты Tracker и Wiki (кроме read-части таблиц) не регистрируются; запись в таблицы блокируется `WriteGuard`.
 
-Все изменяющие инструменты можно глобально отключить флагом `READ_ONLY`, оставив только безопасный доступ на чтение.
+## Не реализовано
 
-## Модель авторизации
-
-- Протокол: OAuth 2.0, сценарий Device Flow.
-- Передаются `client_id` и `client_secret` зарегистрированного приложения Яндекс OAuth.
-- Токены доступа и обновления сохраняются в подключённом томе Docker и обновляются автоматически.
-- Подробности — в документации по авторизации (будет добавлена на этапе реализации авторизации).
-
-## Порядок реализации
-
-Реализация ведётся по приоритетам (1 — раньше всего), указанным в таблицах инструментов:
-
-1. Каркас проекта и транспорт stdio.
-2. Авторизация OAuth 2.0 Device Flow и хранение токенов.
-3. Чтение и базовая работа с задачами Tracker и страницами Wiki.
-4. Изменяющие операции, комментарии, связи, чек-листы, таблицы.
-5. Вложения, доски, спринты, справочники.
-6. Массовые операции, проекты и портфели, административные действия.
-
-## Связанные документы
-
-- [Возможности Yandex Tracker](./yandex-tracker-capabilities.md)
-- [Возможности Yandex Wiki](./yandex-wiki-capabilities.md)
-
-## Открытые вопросы
-
-
-| Вопрос                                                            | Почему важно уточнить                                | Кто может ответить |
-| ----------------------------------------------------------------- | ---------------------------------------------------- | ------------------ |
-| Тип организации (Яндекс 360 или Yandex Cloud)                     | Определяет заголовок `X-Org-ID` или `X-Cloud-Org-ID` | Заказчик           |
-| Объём первой версии (нужны ли сразу административные инструменты) | Влияет на сроки                                      | Заказчик           |
-
-Закрытые вопросы:
-
-- Загрузка бинарных вложений — входит в объём MVP (Tracker и Wiki).
-- Формат содержимого страниц Wiki — Markdown.
-- Точные endpoint Wiki для `recover`, `descendants`, `comments`, `attachments` — уточнены и зафиксированы в [документе возможностей Wiki](./yandex-wiki-capabilities.md).
+Tracker: вложения, доски, спринты, компоненты, версии, массовые операции.
