@@ -1,0 +1,12 @@
+spring:
+  main:
+    web-application-type: servlet
+  ai:
+    mcp:
+      server:
+        enabled: false
+        stdio: false
+
+yandex:
+  retry:
+    enabled: false
