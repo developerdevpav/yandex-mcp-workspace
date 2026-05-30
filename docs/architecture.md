@@ -52,9 +52,18 @@ flowchart LR
 | HTTP-клиент | Spring RestClient | Запросы к API Tracker и Wiki |
 | Тесты | JUnit 5, MockK, AssertJ, WireMock | Модульные и интеграционные тесты |
 
-## Структура пакетов
+## Структура модулей и пакетов
 
-Структура ориентирована на предметные области. Каждая область делится на слои `api`, `application`, `domain`, `infrastructure`.
+Проект собран как multi-module Maven-проект:
+
+```
+yandex-mcp-workspace
+├── yandex-mcp-core      # Общий код: auth, system tools, свойства, HTTP-конфигурация, JSON helpers
+├── yandex-mcp-tracker   # Независимый MCP-сервер Tracker, executable jar и Docker-образ
+└── yandex-mcp-wiki      # Независимый MCP-сервер Wiki, executable jar и Docker-образ
+```
+
+Внутри модулей структура ориентирована на предметные области. Каждая область делится на слои `api`, `application`, `domain`, `infrastructure`.
 
 ```
 com.sorface.mcp.yandex
@@ -88,7 +97,7 @@ com.sorface.mcp.yandex
 
 ## Регистрация инструментов
 
-Инструменты — это методы, помеченные аннотацией `@Tool` из Spring AI. Они собираются в один провайдер `ToolCallbackProvider` в классе `ToolsConfiguration`. По мере роста проекта в провайдер добавляются компоненты Tracker и Wiki.
+Инструменты — это методы, помеченные аннотацией `@Tool` из Spring AI. В независимых серверах они собираются в отдельные провайдеры `ToolCallbackProvider`: `TrackerToolsConfiguration` регистрирует только Tracker-инструменты, `WikiToolsConfiguration` — только Wiki-инструменты.
 
 Пример объявления инструмента:
 
@@ -134,10 +143,10 @@ flowchart LR
 
 При `yandex.read-only=true` действует двойная защита:
 
-1. **Инструменты не регистрируются.** `ToolsConfiguration` не добавляет в провайдер наборы
-   изменяющих инструментов (`TrackerWriteTools`, `WikiWriteTools`), поэтому агент не видит их в
+1. **Инструменты не регистрируются.** `TrackerToolsConfiguration` и `WikiToolsConfiguration` не
+   добавляют в провайдер изменяющие инструменты своего сервера, поэтому агент не видит их в
    `tools/list` и не может вызвать. Инструменты таблиц Wiki (`WikiGridTools`) содержат и чтение, и
-   запись, поэтому регистрируются всегда.
+   запись, поэтому в Wiki-сервере регистрируются всегда.
 2. **Проверка на уровне сервиса.** Каждая изменяющая операция вызывает `WriteGuard.ensureWritable(...)`,
    который в режиме только для чтения отклоняет запрос исключением `ReadOnlyModeException`. Это
    защищает изменяющие методы, оставшиеся доступными (например, в `WikiGridTools`).

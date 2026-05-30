@@ -44,25 +44,49 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Docker metadata
-        id: meta
+      - name: Extract Tracker Docker metadata
+        id: meta-tracker
         uses: docker/metadata-action@v6
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-tracker
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=raw,value=latest
 
-      - name: Build and push Docker image
+      - name: Build and push Tracker Docker image
         uses: docker/build-push-action@v7
         with:
           context: .
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          build-args: MCP_MODULE=yandex-mcp-tracker
+          tags: ${{ steps.meta-tracker.outputs.tags }}
+          labels: ${{ steps.meta-tracker.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract Wiki Docker metadata
+        id: meta-wiki
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-wiki
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=raw,value=latest
+
+      - name: Build and push Wiki Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          build-args: MCP_MODULE=yandex-mcp-wiki
+          tags: ${{ steps.meta-wiki.outputs.tags }}
+          labels: ${{ steps.meta-wiki.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -70,6 +94,8 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
-          files: target/yandex-mcp-server-*.jar
+          files: |
+            yandex-mcp-tracker/target/yandex-mcp-tracker-*.jar
+            yandex-mcp-wiki/target/yandex-mcp-wiki-*.jar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

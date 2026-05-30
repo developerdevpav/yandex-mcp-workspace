@@ -1,0 +1,53 @@
+spring:
+  application:
+    name: yandex-mcp-wiki
+  main:
+    # Транспорт stdio использует stdout как протокольный канал, поэтому баннер отключён,
+    # а тип приложения принудительно не-веб.
+    banner-mode: off
+    web-application-type: none
+  ai:
+    mcp:
+      server:
+        name: yandex-mcp-wiki
+        version: 0.1.0
+        type: SYNC
+        stdio: true
+        instructions: >-
+          Сервер предоставляет инструменты для работы с Yandex Wiki.
+          Инструменты с префиксом wiki_ работают со страницами и таблицами Wiki.
+
+---
+# Профиль авторизации: команда `auth`. MCP-сервер не запускается, выполняется только
+# интерактивное получение токена по сценарию Device Flow.
+spring:
+  config:
+    activate:
+      on-profile: auth
+  ai:
+    mcp:
+      server:
+        enabled: false
+        stdio: false
+
+---
+yandex:
+  client-id: ${YANDEX_CLIENT_ID:}
+  client-secret: ${YANDEX_CLIENT_SECRET:}
+  org-id: ${YANDEX_ORG_ID:}
+  org-type: ${YANDEX_ORG_TYPE:YANDEX_360}
+  token-store-path: ${YANDEX_TOKEN_STORE_PATH:/data/tokens.json}
+  read-only: ${YANDEX_READ_ONLY:false}
+  retry:
+    enabled: ${YANDEX_RETRY_ENABLED:true}
+    max-attempts: ${YANDEX_RETRY_MAX_ATTEMPTS:3}
+    initial-delay: ${YANDEX_RETRY_INITIAL_DELAY:500ms}
+    multiplier: ${YANDEX_RETRY_MULTIPLIER:2.0}
+    max-delay: ${YANDEX_RETRY_MAX_DELAY:10s}
+  tracker:
+    base-url: ${YANDEX_TRACKER_BASE_URL:https://api.tracker.yandex.net}
+  wiki:
+    base-url: ${YANDEX_WIKI_BASE_URL:https://api.wiki.yandex.net}
+  oauth:
+    base-url: ${YANDEX_OAUTH_BASE_URL:https://oauth.yandex.com}
+    scopes: ${YANDEX_OAUTH_SCOPES:}
