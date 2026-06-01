@@ -14,6 +14,8 @@
 - Docker
 - Приложение [Яндекс OAuth](https://oauth.yandex.ru/) (`client_id`, `client_secret`)
 - `YANDEX_ORG_ID` — идентификатор организации
+
+Где создать приложение и найти все ключи — [docs/credentials.md](./docs/credentials.md).
 - `YANDEX_ORG_TYPE` — тип организации (по умолчанию `YANDEX_360`):
   - `YANDEX_360` — Яндекс 360, заголовок `X-Org-ID`
   - `YANDEX_CLOUD` — Yandex Cloud, заголовок `X-Cloud-Org-ID`

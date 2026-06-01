@@ -92,16 +92,17 @@ class WikiWriteTools(
 
     @Tool(
         name = "wiki_page_append_content",
-        description = "Дописывает содержимое (Markdown) к странице Wiki: в конец, в начало или к якорю.",
+        description = "Дописывает содержимое (Markdown) к странице Wiki. " +
+            "Укажите ровно один способ размещения: location (top/bottom) или anchor, но не оба.",
     )
     fun pageAppendContent(
         @ToolParam(description = "Идентификатор страницы")
         id: String,
         @ToolParam(description = "Добавляемое содержимое в формате Markdown")
         content: String,
-        @ToolParam(required = false, description = "Место вставки: bottom или top")
+        @ToolParam(required = false, description = "Вставка в начало или конец страницы: top или bottom")
         location: String?,
-        @ToolParam(required = false, description = "Якорь, к которому выполняется вставка")
+        @ToolParam(required = false, description = "Якорь для вставки, например #heading; альтернатива location")
         anchor: String?,
     ): String = render(wikiWriteService.appendContent(id, content, location, anchor))
 

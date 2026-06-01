@@ -33,6 +33,44 @@ class DefaultWikiWriteServiceTest {
     }
 
     @Test
+    @DisplayName("Дополнение содержимого передаёт body.location для top/bottom")
+    fun `append content builds body location`() {
+        val bodySlot = slot<Any>()
+        every { client.post("/v1/pages/10/append-content", capture(bodySlot), any()) } returns objectMapper.readTree("{}")
+
+        service().appendContent("10", "# Новый блок", location = "bottom", anchor = null)
+
+        val body = bodySlot.captured as ObjectNode
+        assertThat(body.path("content").asText()).isEqualTo("# Новый блок")
+        assertThat(body.path("body").path("location").asText()).isEqualTo("bottom")
+        assertThat(body.has("anchor")).isFalse()
+        assertThat(body.has("location")).isFalse()
+    }
+
+    @Test
+    @DisplayName("Дополнение содержимого передаёт anchor.name для якоря")
+    fun `append content builds anchor name`() {
+        val bodySlot = slot<Any>()
+        every { client.post("/v1/pages/10/append-content", capture(bodySlot), any()) } returns objectMapper.readTree("{}")
+
+        service().appendContent("10", "текст", location = null, anchor = "#heading")
+
+        val body = bodySlot.captured as ObjectNode
+        assertThat(body.path("content").asText()).isEqualTo("текст")
+        assertThat(body.path("anchor").path("name").asText()).isEqualTo("#heading")
+        assertThat(body.has("body")).isFalse()
+    }
+
+    @Test
+    @DisplayName("Одновременный location и anchor приводит к ApiException")
+    fun `append content rejects location and anchor together`() {
+        assertThatThrownBy { service().appendContent("10", "текст", location = "bottom", anchor = "#heading") }
+            .isInstanceOf(ApiException::class.java)
+
+        verify(exactly = 0) { client.post("/v1/pages/10/append-content", any(), any()) }
+    }
+
+    @Test
     @DisplayName("Создание страницы собирает тело из заголовка, адреса и содержимого")
     fun `create page builds body`() {
         val bodySlot = slot<Any>()

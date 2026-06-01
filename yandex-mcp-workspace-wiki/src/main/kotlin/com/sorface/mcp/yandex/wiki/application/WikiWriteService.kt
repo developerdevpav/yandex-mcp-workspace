@@ -72,8 +72,9 @@ interface WikiWriteService {
      *
      * @param id идентификатор страницы
      * @param content добавляемое содержимое в формате Markdown
-     * @param location место вставки: `bottom` (в конец) или `top` (в начало)
-     * @param anchor якорь, к которому выполняется вставка, если задан
+     * @param location место вставки в теле страницы: `bottom` (в конец) или `top` (в начало);
+     *   взаимоисключимо с `anchor`
+     * @param anchor имя якоря для вставки (например, `#heading`); взаимоисключимо с `location`
      * @return результат дополнения
      */
     fun appendContent(id: String, content: String, location: String?, anchor: String?): JsonNode

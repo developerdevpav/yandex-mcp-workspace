@@ -88,9 +88,21 @@ class DefaultWikiWriteService(
 
     override fun appendContent(id: String, content: String, location: String?, anchor: String?): JsonNode {
         writeGuard.ensureWritable("дополнение содержимого страницы")
+        val locationValue = location?.takeIf { it.isNotBlank() }
+        val anchorValue = anchor?.takeIf { it.isNotBlank() }
+        if (locationValue != null && anchorValue != null) {
+            throw ApiException(
+                400,
+                "Укажите только одно место вставки: location (top/bottom) или anchor, но не оба",
+            )
+        }
+
         val body = objectMapper.createObjectNode().put("content", content)
-        location?.takeIf { it.isNotBlank() }?.let { body.put("location", it) }
-        anchor?.takeIf { it.isNotBlank() }?.let { body.put("anchor", it) }
+        if (anchorValue != null) {
+            body.set<JsonNode>("anchor", objectMapper.createObjectNode().put("name", anchorValue))
+        } else if (locationValue != null) {
+            body.set<JsonNode>("body", objectMapper.createObjectNode().put("location", locationValue))
+        }
         return wikiClient.post("/v1/pages/$id/append-content", body)
     }
 

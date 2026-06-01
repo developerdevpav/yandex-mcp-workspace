@@ -7,6 +7,7 @@
 | Документ | Для кого | Содержание |
 |---|---|---|
 | [overview.md](./overview.md) | все | структура проекта, модули, образы Docker |
+| [credentials.md](./credentials.md) | пользователь | где создать OAuth-приложение, взять ключи и ID организации |
 | [setup.md](./setup.md) | пользователь | OAuth, том с токенами, первый запуск |
 | [configuration.md](./configuration.md) | администратор | переменные окружения по серверам |
 | [mcp-clients.md](./mcp-clients.md) | пользователь | Cursor, Codex, проверка подключения |

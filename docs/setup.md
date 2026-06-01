@@ -5,6 +5,8 @@
 - Docker (для готовых образов) или JDK 21 + Maven (для локальной сборки)
 - Приложение [Яндекс OAuth](https://oauth.yandex.ru/) с `client_id` и `client_secret`
 - Идентификатор организации `YANDEX_ORG_ID`
+
+Пошагово, где взять каждое значение — в [credentials.md](./credentials.md).
 - Тип организации `YANDEX_ORG_TYPE`:
   - `YANDEX_360` — заголовок `X-Org-ID`
   - `YANDEX_CLOUD` — заголовок `X-Cloud-Org-ID`
