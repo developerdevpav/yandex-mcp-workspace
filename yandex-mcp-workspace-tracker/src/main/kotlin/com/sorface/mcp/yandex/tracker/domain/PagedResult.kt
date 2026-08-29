@@ -12,6 +12,9 @@ import com.fasterxml.jackson.databind.JsonNode
  * @property items тело ответа со списком объектов (как правило, JSON-массив)
  * @property totalCount общее число объектов, удовлетворяющих запросу, если API его сообщил
  * @property totalPages общее число страниц, если API его сообщил
+ * @property nextPageId курсор следующей страницы из ссылки `rel="next"`, если API его сообщил
+ * @property nextPageUrl полная ссылка следующей страницы из заголовка `Link`
+ * @property scrollId идентификатор прокрутки для больших результатов поиска
  *
  * @author Sorface Developer
  */
@@ -19,4 +22,7 @@ data class PagedResult(
     val items: JsonNode,
     val totalCount: Long?,
     val totalPages: Long?,
+    val nextPageId: String? = null,
+    val nextPageUrl: String? = null,
+    val scrollId: String? = null,
 )

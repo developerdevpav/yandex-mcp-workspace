@@ -23,8 +23,8 @@ class DefaultTrackerReadServiceTest {
     private val service = DefaultTrackerReadService(client, objectMapper)
 
     @Test
-    @DisplayName("Поиск по языку запросов игнорирует структурный фильтр")
-    fun `search by query ignores filter`() {
+    @DisplayName("Поиск по языку запросов передаёт только критерий query")
+    fun `search by query builds query criterion`() {
         val bodySlot = slot<Any>()
         every {
             client.postPaged("/v3/issues/_search", capture(bodySlot), any())
@@ -32,13 +32,19 @@ class DefaultTrackerReadServiceTest {
 
         service.searchIssues(
             query = "queue: TREK",
-            filter = """{"assignee":"me"}""",
-            queue = "TREK",
-            keys = "TREK-1",
+            filter = null,
+            queue = null,
+            keys = null,
             order = "+status",
             expand = null,
+            fields = null,
             perPage = null,
             page = null,
+            id = null,
+            scrollType = null,
+            perScroll = null,
+            scrollTTLMillis = null,
+            scrollId = null,
         )
 
         val body = bodySlot.captured as ObjectNode
@@ -49,7 +55,7 @@ class DefaultTrackerReadServiceTest {
     }
 
     @Test
-    @DisplayName("Поиск по фильтру собирает filter, очередь и ключи")
+    @DisplayName("Поиск по фильтру передаёт один структурный критерий")
     fun `search by filter builds structured body`() {
         val bodySlot = slot<Any>()
         every {
@@ -59,18 +65,24 @@ class DefaultTrackerReadServiceTest {
         service.searchIssues(
             query = null,
             filter = """{"assignee":"me"}""",
-            queue = "TREK",
-            keys = "TREK-1, TREK-2",
+            queue = null,
+            keys = null,
             order = null,
             expand = null,
+            fields = null,
             perPage = null,
             page = null,
+            id = null,
+            scrollType = null,
+            perScroll = null,
+            scrollTTLMillis = null,
+            scrollId = null,
         )
 
         val body = bodySlot.captured as ObjectNode
         assertThat(body.path("filter").path("assignee").asText()).isEqualTo("me")
-        assertThat(body.path("filter").path("queue").asText()).isEqualTo("TREK")
-        assertThat(body.path("keys").map { it.asText() }).containsExactly("TREK-1", "TREK-2")
+        assertThat(body.has("queue")).isFalse()
+        assertThat(body.has("keys")).isFalse()
     }
 
     @Test
@@ -94,8 +106,37 @@ class DefaultTrackerReadServiceTest {
                 keys = null,
                 order = null,
                 expand = null,
+                fields = null,
                 perPage = null,
                 page = null,
+                id = null,
+                scrollType = null,
+                perScroll = null,
+                scrollTTLMillis = null,
+                scrollId = null,
+            )
+        }.isInstanceOf(ApiException::class.java)
+    }
+
+    @Test
+    @DisplayName("Смешивание критериев поиска отклоняется до обращения к API")
+    fun `mixed search criteria are rejected`() {
+        assertThatThrownBy {
+            service.searchIssues(
+                query = null,
+                filter = """{"assignee":"me"}""",
+                queue = "TREK",
+                keys = null,
+                order = null,
+                expand = null,
+                fields = null,
+                perPage = null,
+                page = null,
+                id = null,
+                scrollType = null,
+                perScroll = null,
+                scrollTTLMillis = null,
+                scrollId = null,
             )
         }.isInstanceOf(ApiException::class.java)
     }

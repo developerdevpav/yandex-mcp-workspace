@@ -22,6 +22,8 @@ MCP-сервер модуля `yandex-mcp-workspace-wiki`. Образ: `ghcr.io/
 - Содержимое страниц — **Markdown** в параметре `content`.
 - Операции с таблицами: тело запроса — JSON-строка в параметре `body`.
 - `wiki_page_delete` возвращает токен восстановления; `wiki_page_recover` принимает этот токен.
+- `wiki_page_clone` принимает обязательный `target` и возвращает асинхронную операцию; её состояние читает `wiki_clone_operation_get`.
+- Списки подстраниц, комментариев и вложений используют `next_cursor` из ответа Wiki.
 
 ## Read-only
 

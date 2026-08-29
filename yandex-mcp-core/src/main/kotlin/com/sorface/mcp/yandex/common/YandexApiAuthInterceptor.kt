@@ -1,6 +1,7 @@
 package com.sorface.mcp.yandex.common
 
 import com.sorface.mcp.yandex.auth.application.AuthService
+import com.sorface.mcp.yandex.auth.domain.AuthorizationException
 import com.sorface.mcp.yandex.config.YandexProperties
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpRequest
@@ -31,6 +32,11 @@ class YandexApiAuthInterceptor(
         body: ByteArray,
         execution: ClientHttpRequestExecution,
     ): ClientHttpResponse {
+        if (properties.orgId.isBlank()) {
+            throw AuthorizationException(
+                "CONFIG_REQUIRED: не задан идентификатор организации Yandex. Выполните команду setup.",
+            )
+        }
         request.headers.set(HttpHeaders.AUTHORIZATION, "OAuth ${authService.currentAccessToken()}")
         request.headers.set(properties.orgHeaderName(), properties.orgId)
         return execution.execute(request, body)

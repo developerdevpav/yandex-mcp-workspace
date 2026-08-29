@@ -104,6 +104,28 @@ class TrackerClientTest {
     }
 
     @Test
+    @DisplayName("Курсор следующей страницы извлекается из заголовка Link")
+    fun `getPaged reads next page cursor`() {
+        server.stubFor(
+            get(urlPathEqualTo("/v3/issues/TREK-1/comments")).willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withHeader(
+                        "Link",
+                        "<https://api.tracker.yandex.net/v3/issues/TREK-1/comments?perPage=50>; rel=\"first\", " +
+                            "<https://api.tracker.yandex.net/v3/issues/TREK-1/comments?id=987&perPage=50>; rel=\"next\"",
+                    )
+                    .withBody("[]"),
+            ),
+        )
+
+        val result = client.getPaged("/v3/issues/TREK-1/comments")
+
+        assertThat(result.nextPageId).isEqualTo("987")
+        assertThat(result.nextPageUrl).contains("id=987")
+    }
+
+    @Test
     @DisplayName("POST отправляет тело JSON и возвращает ответ")
     fun `post sends json body`() {
         server.stubFor(

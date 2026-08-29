@@ -31,8 +31,7 @@ class DefaultWikiWriteService(
 
     override fun createPage(
         title: String,
-        slug: String?,
-        parentId: String?,
+        slug: String,
         content: String?,
         fields: String?,
     ): JsonNode {
@@ -42,7 +41,6 @@ class DefaultWikiWriteService(
             explicit = mapOf(
                 "title" to title,
                 "slug" to slug,
-                "parent_id" to parentId,
                 "content" to content,
             ),
             json = fields,
@@ -72,17 +70,14 @@ class DefaultWikiWriteService(
 
     override fun clonePage(
         id: String,
-        slug: String?,
-        parentId: String?,
+        target: String,
         title: String?,
-        fields: String?,
+        subscribeMe: Boolean?,
     ): JsonNode {
         writeGuard.ensureWritable("клонирование страницы")
-        val body = JsonFields.merge(
-            objectMapper,
-            explicit = mapOf("slug" to slug, "parent_id" to parentId, "title" to title),
-            json = fields,
-        )
+        val body = objectMapper.createObjectNode().put("target", target)
+        title?.takeIf { it.isNotBlank() }?.let { body.put("title", it) }
+        subscribeMe?.let { body.put("subscribe_me", it) }
         return wikiClient.post("/v1/pages/$id/clone", body)
     }
 
@@ -100,17 +95,34 @@ class DefaultWikiWriteService(
         val body = objectMapper.createObjectNode().put("content", content)
         if (anchorValue != null) {
             body.set<JsonNode>("anchor", objectMapper.createObjectNode().put("name", anchorValue))
-        } else if (locationValue != null) {
-            body.set<JsonNode>("body", objectMapper.createObjectNode().put("location", locationValue))
+        } else {
+            val normalizedLocation = locationValue ?: "bottom"
+            if (normalizedLocation !in setOf("top", "bottom")) {
+                throw ApiException(400, "Параметр location должен иметь значение top или bottom")
+            }
+            body.set<JsonNode>("body", objectMapper.createObjectNode().put("location", normalizedLocation))
         }
         return wikiClient.post("/v1/pages/$id/append-content", body)
     }
 
-    override fun addComment(id: String, content: String, parentId: String?): JsonNode {
+    override fun addComment(
+        id: String,
+        content: String,
+        parentId: String?,
+        threadId: String?,
+        inlineText: String?,
+    ): JsonNode {
         writeGuard.ensureWritable("добавление комментария к странице")
-        val body = objectMapper.createObjectNode().put("content", content)
+        val body = objectMapper.createObjectNode().put("body", content)
         parentId?.takeIf { it.isNotBlank() }?.let { body.put("parent_id", it) }
+        threadId?.takeIf { it.isNotBlank() }?.let { body.put("thread_id", it) }
+        inlineText?.takeIf { it.isNotBlank() }?.let { body.put("inline_text", it) }
         return wikiClient.post("/v1/pages/$id/comments", body)
+    }
+
+    override fun deleteComment(id: String, commentId: String): JsonNode {
+        writeGuard.ensureWritable("удаление комментария со страницы")
+        return wikiClient.delete("/v1/pages/$id/comments/$commentId")
     }
 
     override fun uploadAttachment(pageId: String, filePath: String, name: String?): JsonNode {
@@ -142,8 +154,8 @@ class DefaultWikiWriteService(
      */
     private fun createUploadSession(fileName: String, size: Long): String {
         val body = objectMapper.createObjectNode()
-            .put("name", fileName)
-            .put("size", size)
+            .put("file_name", fileName)
+            .put("file_size", size)
         val response = wikiClient.post("/v1/upload_sessions", body)
         return extractSessionId(response)
     }

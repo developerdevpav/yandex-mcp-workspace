@@ -2,8 +2,8 @@
 
 | Сервер | Модуль | Образ | Инструментов |
 |---|---|---|---|
-| Tracker | `yandex-mcp-workspace-tracker` | `ghcr.io/developerdevpav/yandex-mcp-workspace-tracker:latest` | 39 |
-| Wiki | `yandex-mcp-workspace-wiki` | `ghcr.io/developerdevpav/yandex-mcp-workspace-wiki:latest` | 31 |
+| Tracker | `yandex-mcp-workspace-tracker` | `ghcr.io/developerdevpav/yandex-mcp-workspace-tracker:latest` | 42 |
+| Wiki | `yandex-mcp-workspace-wiki` | `ghcr.io/developerdevpav/yandex-mcp-workspace-wiki:latest` | 39 |
 
 Обзор workspace и конфигурация — [../overview.md](../overview.md), [../configuration.md](../configuration.md).
 
@@ -14,6 +14,9 @@
 | `system_ping` | Проверка доступности (`pong`) |
 | `system_server_info` | Режим: read-write или read-only |
 | `yandex_auth_status` | Состояние OAuth без секретов |
+| `yandex_auth_start` | Начать Device Flow и вернуть ссылку с пользовательским кодом |
+| `yandex_auth_poll` | Проверить состояние интерактивной сессии |
+| `yandex_auth_logout` | Удалить локальные токены |
 
 ## Tracker
 
@@ -35,8 +38,8 @@
 
 | Группа | Инструменты |
 |---|---|
-| Страницы | `wiki_page_get_by_slug`, `wiki_page_get_by_id`, `wiki_page_get_descendants`, `wiki_page_get_resources`, `wiki_page_create`, `wiki_page_update`, `wiki_page_delete`, `wiki_page_recover`, `wiki_page_clone`, `wiki_page_append_content` |
-| Комментарии | `wiki_page_comments_list`, `wiki_page_comment_add` |
+| Страницы и поиск | `wiki_page_get_by_slug`, `wiki_page_get_by_id`, `wiki_page_get_descendants`, `wiki_page_get_descendants_by_id`, `wiki_page_get_resources`, `wiki_search`, `wiki_page_create`, `wiki_page_update`, `wiki_page_delete`, `wiki_page_recover`, `wiki_page_clone`, `wiki_clone_operation_get`, `wiki_page_append_content` |
+| Комментарии | `wiki_page_comments_list`, `wiki_page_comment_thread`, `wiki_page_comment_add`, `wiki_page_comment_delete` |
 | Вложения | `wiki_page_attachments_list`, `wiki_page_attachment_upload`, `wiki_page_attachment_attach` |
 | Таблицы | `wiki_grid_get`, `wiki_page_grids_list`, `wiki_grid_create`, `wiki_grid_update`, `wiki_grid_delete`, `wiki_grid_clone`, `wiki_grid_add_rows`, `wiki_grid_delete_rows`, `wiki_grid_move_row`, `wiki_grid_add_columns`, `wiki_grid_delete_columns`, `wiki_grid_move_column`, `wiki_grid_update_cells` |
 

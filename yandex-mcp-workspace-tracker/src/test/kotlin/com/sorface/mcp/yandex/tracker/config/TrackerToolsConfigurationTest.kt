@@ -22,7 +22,7 @@ class TrackerToolsConfigurationTest {
         configuration.trackerToolCallbackProvider(
             properties = YandexProperties(readOnly = readOnly),
             systemTools = SystemTools(YandexProperties(readOnly = readOnly)),
-            authTools = AuthTools(mockk(relaxed = true)),
+            authTools = AuthTools(mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true)),
             trackerTools = TrackerTools(mockk(relaxed = true), objectMapper),
             trackerWriteTools = TrackerWriteTools(mockk(relaxed = true), objectMapper),
         )
@@ -35,7 +35,7 @@ class TrackerToolsConfigurationTest {
     fun `registers only tracker tools`() {
         val names = toolNames(provider(readOnly = false))
 
-        assertThat(names).contains("system_ping", "yandex_auth_status", "tracker_issue_get", "tracker_issue_create", "tracker_checklist_list", "tracker_worklog_list", "tracker_field_list")
+        assertThat(names).contains("system_ping", "yandex_auth_status", "yandex_auth_start", "yandex_auth_poll", "yandex_auth_logout", "tracker_issue_get", "tracker_issue_create", "tracker_checklist_list", "tracker_worklog_list", "tracker_field_list")
         assertThat(names).noneMatch { it.startsWith("wiki_") }
     }
 

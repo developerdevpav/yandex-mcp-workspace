@@ -28,7 +28,7 @@ enum class OrgType {
  * @property orgId идентификатор организации для заголовка `X-Org-ID`/`X-Cloud-Org-ID`
  * @property orgType тип организации, определяющий имя заголовка идентификатора организации
  * @property oauth настройки OAuth-сервиса Яндекса
- * @property tokenStorePath путь к файлу хранения токенов в подключённом томе
+ * @property tokenStorePath путь к локальному файлу хранения токенов или к файлу в Docker volume
  * @property readOnly режим только для чтения: при `true` изменяющие инструменты отключены
  * @property retry настройки повторных запросов при временных сбоях API
  *
@@ -36,15 +36,22 @@ enum class OrgType {
  */
 @ConfigurationProperties(prefix = "yandex")
 data class YandexProperties(
-    val clientId: String = "",
-    val clientSecret: String = "",
-    val orgId: String = "",
-    val orgType: OrgType = OrgType.YANDEX_360,
+    var clientId: String = "",
+    var clientSecret: String = "",
+    var orgId: String = "",
+    var orgType: OrgType = OrgType.YANDEX_360,
     val oauth: OAuthProperties = OAuthProperties(),
-    val tokenStorePath: String = "/data/tokens.json",
+    val tokenStorePath: String = UserDataPaths.defaultTokenStorePath(),
     val readOnly: Boolean = false,
+    val http: HttpProperties = HttpProperties(),
     val retry: RetryProperties = RetryProperties(),
 ) {
+    /** Настройки сетевых тайм-аутов API Tracker и Wiki. */
+    data class HttpProperties(
+        val connectTimeout: Duration = Duration.ofSeconds(5),
+        val readTimeout: Duration = Duration.ofSeconds(30),
+    )
+
     /**
      * Настройки сервиса авторизации Яндекс OAuth.
      *
@@ -59,9 +66,9 @@ data class YandexProperties(
     /**
      * Настройки повторных запросов к API при временных сбоях.
      *
-     * Повтор выполняется только для безопасных в смысле идемпотентности ситуаций: сетевые ошибки
-     * (соединение не установлено, разрыв), превышение лимита запросов (`429`) и временные ошибки
-     * сервиса (`5xx`). Задержка между попытками растёт экспоненциально: `initialDelay`,
+     * Сетевые ошибки и временные ошибки сервиса повторяются только для идемпотентных HTTP-методов,
+     * чтобы не создать дубликат задачи, страницы или комментария. Ответ `429` можно безопасно
+     * повторить для любого метода. Задержка между попытками растёт экспоненциально: `initialDelay`,
      * `initialDelay * multiplier`, и так далее, но не превышает `maxDelay`. Если ответ `429`
      * содержит заголовок `Retry-After`, используется указанное в нём время.
      *

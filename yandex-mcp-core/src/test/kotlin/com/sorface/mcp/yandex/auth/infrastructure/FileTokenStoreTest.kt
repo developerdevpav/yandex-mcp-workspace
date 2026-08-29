@@ -10,8 +10,12 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import java.nio.file.Path
+import java.nio.file.Files
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 @DisplayName("Файловое хранилище токенов (FileTokenStore)")
 class FileTokenStoreTest {
@@ -58,5 +62,50 @@ class FileTokenStoreTest {
         tokenStore.clear()
 
         assertThat(tokenStore.load()).isNull()
+    }
+
+    @Test
+    @DisplayName("После сохранения не остаётся временных файлов")
+    fun `save does not leave temporary files`(@TempDir tempDir: Path) {
+        val tokenStore = store(tempDir)
+
+        tokenStore.save(TokenSet("access", "refresh", "OAuth", Instant.now().plusSeconds(3600)))
+
+        Files.list(tempDir).use { files ->
+            assertThat(files.map { it.fileName.toString() }.toList())
+                .contains("tokens.json", "tokens.json.lock")
+                .noneMatch { it.endsWith(".tmp") }
+        }
+    }
+
+    @Test
+    @DisplayName("Два экземпляра выполняют обновление токена только один раз")
+    fun `two stores serialize token update`(@TempDir tempDir: Path) {
+        val first = store(tempDir)
+        val second = store(tempDir)
+        first.save(TokenSet("old", "refresh", "OAuth", Instant.now().plusSeconds(10)))
+        val refreshCalls = AtomicInteger()
+        val executor = Executors.newFixedThreadPool(2)
+
+        try {
+            val tasks = listOf(first, second).map { tokenStore ->
+                executor.submit<TokenSet?> {
+                    tokenStore.update { current ->
+                        if (current?.accessToken == "old") {
+                            refreshCalls.incrementAndGet()
+                            current.copy(accessToken = "new")
+                        } else {
+                            current
+                        }
+                    }
+                }
+            }
+            tasks.forEach { it.get(5, TimeUnit.SECONDS) }
+        } finally {
+            executor.shutdownNow()
+        }
+
+        assertThat(refreshCalls).hasValue(1)
+        assertThat(first.load()?.accessToken).isEqualTo("new")
     }
 }

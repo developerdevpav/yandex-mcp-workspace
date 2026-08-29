@@ -19,7 +19,8 @@ MCP-сервер модуля `yandex-mcp-workspace-tracker`. Образ: `ghcr.
 
 ## Особенности
 
-- Поиск: `query` (язык запросов Tracker) или `filter` (JSON) — параметры взаимоисключающие.
+- Поиск принимает ровно один критерий: `query`, `filter`, `queue` или `keys`.
+- Для `queue`, комментариев и changelog продолжение выдачи передаётся через `nextPageId`; для выдач свыше 10000 задач поддержан `scrollId`.
 - `tracker_issue_create` / `tracker_issue_update` — произвольные поля через JSON `fields`.
 - `tracker_issue_update` принимает `version` для защиты от конфликтов записи.
 - Worklog: длительность в ISO 8601 (например `PT2H30M`).

@@ -1,6 +1,6 @@
 # Где взять ключи и идентификаторы
 
-Перед первым запуском MCP-серверов нужны три значения из интерфейсов Яндекса. OAuth-токен пользователя получается отдельно — через команду `auth` (см. [setup.md](./setup.md#первичная-авторизация)).
+Перед первым запуском MCP-серверов нужны три значения из интерфейсов Яндекса. OAuth-токен пользователя получает команда `setup` или инструменты `yandex_auth_start`/`yandex_auth_poll`.
 
 ## Что понадобится
 
@@ -11,7 +11,7 @@
 | `YANDEX_ORG_ID` | [Трекер](https://tracker.yandex.ru/) → **Администрирование → Организации** → поле **Идентификатор** | `12345678` |
 | `YANDEX_ORG_TYPE` | Зависит от типа организации (см. ниже) | `YANDEX_360` или `YANDEX_CLOUD` |
 
-OAuth-токен (`access_token`, `refresh_token`) **не копируется вручную** из браузера — сервер получает его по сценарию Device Flow и сохраняет в томе `yandex-mcp-tokens` (`/data/tokens.json`).
+OAuth-токен (`access_token`, `refresh_token`) **не копируется вручную** из браузера — сервер получает его по сценарию Device Flow и сохраняет в локальном хранилище. Docker volume используется только при контейнерном запуске.
 
 ## 1. Создать OAuth-приложение
 
@@ -38,7 +38,7 @@ OAuth-токен (`access_token`, `refresh_token`) **не копируется �
 - Tracker: [Доступ к API](https://yandex.ru/support/tracker/ru/api-ref/access)
 - Wiki: [Доступ к API](https://yandex.ru/support/wiki/ru/api-ref/access)
 
-> **Важно:** не публикуйте `client_secret` и не коммитьте его в репозиторий. Храните только в переменных окружения или локальном `mcp.json`.
+> **Важно:** не публикуйте `client_secret` и не коммитьте его в репозиторий. Команда `setup` сохраняет его только в локальном файле с правами `600`; конфигурация MCP секрета не содержит.
 
 ## 2. Узнать ID организации
 
@@ -63,31 +63,23 @@ OAuth-токен (`access_token`, `refresh_token`) **не копируется �
 
 MCP-сервер использует **OAuth 2.0 Device Flow**, а не ручное копирование токена из браузера.
 
-После того как заданы `YANDEX_CLIENT_ID`, `YANDEX_CLIENT_SECRET` и `YANDEX_ORG_ID`, выполните один раз:
+Выполните один раз локально:
 
 ```bash
-docker run -it --rm \
-  -e YANDEX_CLIENT_ID=<client_id> \
-  -e YANDEX_CLIENT_SECRET=<client_secret> \
-  -e YANDEX_ORG_ID=<org_id> \
-  -e YANDEX_ORG_TYPE=YANDEX_360 \
-  -v yandex-mcp-tokens:/data \
-  ghcr.io/developerdevpav/yandex-mcp-workspace-tracker:latest auth
+java -jar yandex-mcp-workspace-tracker.jar setup
 ```
+
+Мастер сам запросит перечисленные выше значения. В интерактивном терминале `client_secret` не отображается при вводе. Флаги `--client-id`, `--client-secret`, `--org-id` и `--org-type` нужны только для неинтерактивной автоматизации.
 
 Дальнейшие шаги:
 
-1. Откройте ссылку из терминала (обычно https://ya.ru/device).
+1. Браузер откроется автоматически; если это невозможно, откройте показанную ссылку.
 2. Введите код подтверждения.
 3. Разрешите доступ приложению.
 
-Токены сохраняются в Docker-томе `yandex-mcp-tokens`. Проверка:
+После подключения MCP те же действия можно выполнить из чата через `yandex_auth_start` и `yandex_auth_poll`, не просматривая логи.
 
-```bash
-docker run --rm -v yandex-mcp-tokens:/data alpine cat /data/tokens.json
-```
-
-Подробнее — [setup.md](./setup.md#первичная-авторизация).
+Подробнее — [setup.md](./setup.md#первичная-настройка).
 
 ## 5. Дополнительные параметры (обычно не нужны)
 
@@ -95,7 +87,8 @@ docker run --rm -v yandex-mcp-tokens:/data alpine cat /data/tokens.json
 |---|---|
 | `YANDEX_OAUTH_SCOPES` | Если нужно явно передать scopes в Device Flow (через пробел). По умолчанию scopes берутся из настроек приложения на oauth.yandex.ru |
 | `YANDEX_READ_ONLY=true` | Запретить инструменты записи |
-| `YANDEX_TOKEN_STORE_PATH` | Другой путь к файлу токенов (по умолчанию `/data/tokens.json`) |
+| `YANDEX_TOKEN_STORE_PATH` | Другой путь к файлу токенов; `/data/tokens.json` используется только образом Docker |
+| `YANDEX_CONFIG_PATH` | Другой путь к файлу настроек, созданному `setup` |
 
 Полный список — [configuration.md](./configuration.md).
 
@@ -106,15 +99,15 @@ docker run --rm -v yandex-mcp-tokens:/data alpine cat /data/tokens.json
 - [ ] Скопированы `ClientID` и `Client secret`
 - [ ] Скопирован ID организации из **Администрирование → Организации** в Трекере
 - [ ] Выбран корректный `YANDEX_ORG_TYPE`
-- [ ] Выполнена команда `auth` с томом `yandex-mcp-tokens`
-- [ ] В `mcp.json` те же `CLIENT_ID`/`SECRET`, что использовались при `auth`
+- [ ] Выполнена команда `setup` или завершена авторизация через MCP
+- [ ] `doctor` показывает сохранённый токен и корректный заголовок организации
 
 ## Частые проблемы
 
 | Симптом | Что проверить |
 |---|---|
 | `OAuth: invalid_client` | `YANDEX_CLIENT_ID` и `YANDEX_CLIENT_SECRET` из карточки приложения |
-| `401 Unauthorized` | Повторите `auth`; scopes приложения; права пользователя в Tracker/Wiki |
+| `401 Unauthorized` | Вызовите `yandex_auth_start` или повторите `login`; проверьте scopes и права пользователя |
 | Ошибка доступа при корректном токене | `YANDEX_ORG_ID` и `YANDEX_ORG_TYPE` |
 | Wiki недоступна через API | Администратор мог отключить доступ к API в настройках организации |
 

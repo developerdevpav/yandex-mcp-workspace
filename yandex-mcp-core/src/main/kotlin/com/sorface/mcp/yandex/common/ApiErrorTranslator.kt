@@ -24,7 +24,7 @@ object ApiErrorTranslator {
     fun translate(service: String, status: HttpStatusCode, details: String): ApiException {
         val prefix = when (status.value()) {
             400 -> "Некорректный запрос к API $service"
-            401 -> "Не авторизовано: токен недействителен или истёк, выполните авторизацию командой 'auth'"
+            401 -> "Не авторизовано: токен недействителен или истёк, вызовите yandex_auth_start"
             403 -> "Недостаточно прав для выполнения операции в $service"
             404 -> "Объект не найден в $service"
             409 -> "Конфликт изменений в $service"

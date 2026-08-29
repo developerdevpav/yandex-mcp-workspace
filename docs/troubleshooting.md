@@ -14,7 +14,7 @@
 
 ## Таймаут MCP-клиента при старте
 
-**Симптом:** Cursor/Codex: timeout creating MCP client (~30 с).
+**Симптом:** Claude/ChatGPT Codex/Cursor: timeout creating MCP client (~30 с).
 
 **Возможные причины:**
 
@@ -40,9 +40,9 @@
 
 **Решение:**
 
-1. Выполните [авторизацию](./setup.md#первичная-авторизация) с тем же томом `-v yandex-mcp-tokens:/data`, что в `mcp.json`.
-2. Проверьте `tokens.json` в томе.
-3. Убедитесь, что `YANDEX_CLIENT_ID`/`SECRET` в `serve` совпадают с теми, что использовались при `auth`.
+1. В локальном режиме вызовите `yandex_auth_start`, подтвердите доступ и выполните `yandex_auth_poll`.
+2. Выполните `doctor` и проверьте путь к настройкам и срок токена.
+3. В Docker убедитесь, что `setup` и `serve` используют один том `-v yandex-mcp-tokens:/data`.
 
 ## Неверная организация
 

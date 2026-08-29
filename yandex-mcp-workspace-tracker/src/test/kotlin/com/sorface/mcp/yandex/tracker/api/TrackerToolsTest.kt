@@ -31,14 +31,20 @@ class TrackerToolsTest {
     @DisplayName("tracker_issue_search оборачивает результат полями пагинации")
     fun `search wraps pagination`() {
         every {
-            service.searchIssues("queue: TREK", null, null, null, null, null, 50, 2)
+            service.searchIssues(
+                "queue: TREK", null, null, null, null, null, null, 50, 2,
+                null, null, null, null, null,
+            )
         } returns PagedResult(
             items = objectMapper.readTree("""[{"key":"TREK-1"}]"""),
             totalCount = 120,
             totalPages = 3,
         )
 
-        val result = tools.issueSearch("queue: TREK", null, null, null, null, null, 50, 2)
+        val result = tools.issueSearch(
+            "queue: TREK", null, null, null, null, null, null, 50, 2,
+            null, null, null, null, null,
+        )
 
         val node = objectMapper.readTree(result)
         assertThat(node.path("totalCount").asLong()).isEqualTo(120)

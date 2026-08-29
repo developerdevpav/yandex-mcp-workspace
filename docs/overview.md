@@ -2,12 +2,12 @@
 
 ## Что это
 
-**Yandex MCP Workspace** — набор из двух отдельных MCP-серверов. Каждый сервер запускается своим Docker-образом, общается с агентом по **stdio** и вызывает REST API Яндекса от имени авторизованного пользователя.
+**Yandex MCP Workspace** — набор из двух отдельных локальных MCP-серверов. Готовый переносимый пакет включает запускаемые файлы Tracker и Wiki вместе с Java Runtime; также доступны отдельные JAR и Docker-образы. Серверы общаются с агентом по **stdio** и вызывают REST API Яндекса от имени авторизованного пользователя.
 
 | Сервер | Maven-модуль | Образ GHCR | Инструменты |
 |---|---|---|---|
-| Tracker | `yandex-mcp-workspace-tracker` | `ghcr.io/developerdevpav/yandex-mcp-workspace-tracker:latest` | 39: `tracker_*`, `system_*`, `yandex_auth_status` |
-| Wiki | `yandex-mcp-workspace-wiki` | `ghcr.io/developerdevpav/yandex-mcp-workspace-wiki:latest` | 31: `wiki_*`, `system_*`, `yandex_auth_status` |
+| Tracker | `yandex-mcp-workspace-tracker` | `ghcr.io/developerdevpav/yandex-mcp-workspace-tracker:latest` | 42: `tracker_*`, `system_*`, `yandex_auth_*` |
+| Wiki | `yandex-mcp-workspace-wiki` | `ghcr.io/developerdevpav/yandex-mcp-workspace-wiki:latest` | 39: `wiki_*`, `system_*`, `yandex_auth_*` |
 
 Имена образов формируются из имени GitHub-репозитория: `{owner}/{repo}-tracker` и `{owner}/{repo}-wiki` (см. [development.md](./development.md)).
 
@@ -20,7 +20,7 @@ yandex-mcp-workspace/          # корневой pom (packaging pom)
 └── yandex-mcp-workspace-wiki/          # Wiki API + MCP-инструменты wiki_*
 ```
 
-- **Общее ядро** (`yandex-mcp-core`) — авторизация Device Flow, хранение токенов, повтор запросов при сбоях, `system_*`, `yandex_auth_status`.
+- **Общее ядро** (`yandex-mcp-core`) — интерактивная авторизация Device Flow из CLI/MCP, атомарное хранение токенов, повтор запросов при сбоях, `system_*`, `yandex_auth_*`.
 - **Tracker** — только настройки `yandex.tracker` и HTTP-клиент к `api.tracker.yandex.net`.
 - **Wiki** — только настройки `yandex.wiki` и HTTP-клиент к `api.wiki.yandex.net`.
 

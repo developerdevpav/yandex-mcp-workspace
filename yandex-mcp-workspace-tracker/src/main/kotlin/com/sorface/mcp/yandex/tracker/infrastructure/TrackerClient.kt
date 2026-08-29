@@ -10,6 +10,7 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import org.springframework.web.util.UriBuilder
+import org.springframework.web.util.UriComponentsBuilder
 import java.net.URI
 import java.util.function.Function
 
@@ -129,8 +130,27 @@ class TrackerClient(
             items = body ?: NullNode.instance,
             totalCount = response.headers.getFirst(HEADER_TOTAL_COUNT)?.toLongOrNull(),
             totalPages = response.headers.getFirst(HEADER_TOTAL_PAGES)?.toLongOrNull(),
+            nextPageId = nextPageUrl(response.headers[HEADER_LINK]).let(::extractPageId),
+            nextPageUrl = nextPageUrl(response.headers[HEADER_LINK]),
+            scrollId = response.headers.getFirst(HEADER_SCROLL_ID),
         )
     }
+
+    /**
+     * Извлекает ссылку `rel="next"` из одного или нескольких заголовков `Link`.
+     */
+    private fun nextPageUrl(linkHeaders: List<String>?): String? =
+        linkHeaders.orEmpty()
+            .asSequence()
+            .flatMap { it.split(",").asSequence() }
+            .mapNotNull { NEXT_LINK_REGEX.find(it)?.groupValues?.get(1) }
+            .firstOrNull()
+
+    /**
+     * Извлекает курсор `id` из ссылки следующей страницы относительной пагинации.
+     */
+    private fun extractPageId(nextPageUrl: String?): String? = nextPageUrl
+        ?.let { runCatching { UriComponentsBuilder.fromUriString(it).build().queryParams.getFirst("id") }.getOrNull() }
 
     /**
      * Переводит ошибочный HTTP-статус и тело ответа Tracker в [ApiException] с понятным сообщением.
@@ -146,6 +166,8 @@ class TrackerClient(
         if (body == null || body.isNull) return ""
         val parts = mutableListOf<String>()
         body.path("errorMessages").takeIf { it.isArray }?.forEach { parts += it.asText() }
+        listOf("message", "error", "error_description")
+            .forEach { field -> body.path(field).takeIf { it.isTextual }?.let { parts += it.asText() } }
         body.path("errors").takeIf { it.isObject }?.fields()?.forEach { (field, value) ->
             parts += "$field: ${value.asText()}"
         }
@@ -155,5 +177,8 @@ class TrackerClient(
     private companion object {
         const val HEADER_TOTAL_COUNT = "X-Total-Count"
         const val HEADER_TOTAL_PAGES = "X-Total-Pages"
+        const val HEADER_LINK = "Link"
+        const val HEADER_SCROLL_ID = "X-Scroll-Id"
+        val NEXT_LINK_REGEX = Regex("""<([^>]+)>\s*;\s*rel=\"?next\"?""", RegexOption.IGNORE_CASE)
     }
 }

@@ -6,6 +6,9 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.client.RestClient
 import java.time.Clock
+import java.net.http.HttpClient
+import org.springframework.http.client.ClientHttpRequestFactory
+import org.springframework.http.client.JdkClientHttpRequestFactory
 
 /**
  * Конфигурация общих компонентов для обращения к внешним сервисам.
@@ -30,8 +33,21 @@ class HttpClientConfig {
      * @param properties настройки, содержащие параметры повторных запросов
      */
     @Bean
-    fun retryingHttpRequestInterceptor(properties: YandexProperties): RetryingHttpRequestInterceptor =
-        RetryingHttpRequestInterceptor(properties)
+    fun retryingHttpRequestInterceptor(
+        properties: YandexProperties,
+        clock: Clock,
+    ): RetryingHttpRequestInterceptor = RetryingHttpRequestInterceptor(properties, clock = clock)
+
+    /** Фабрика запросов с конечными тайм-аутами подключения и чтения ответа. */
+    @Bean
+    fun yandexClientHttpRequestFactory(properties: YandexProperties): ClientHttpRequestFactory {
+        val httpClient = HttpClient.newBuilder()
+            .connectTimeout(properties.http.connectTimeout)
+            .build()
+        return JdkClientHttpRequestFactory(httpClient).apply {
+            setReadTimeout(properties.http.readTimeout)
+        }
+    }
 
     /**
      * HTTP-клиент для обращения к сервису Яндекс OAuth.
@@ -39,9 +55,13 @@ class HttpClientConfig {
      * @param properties настройки подключения, содержащие базовый адрес OAuth-сервиса
      */
     @Bean
-    fun oauthRestClient(properties: YandexProperties): RestClient =
+    fun oauthRestClient(
+        properties: YandexProperties,
+        yandexClientHttpRequestFactory: ClientHttpRequestFactory,
+    ): RestClient =
         RestClient.builder()
             .baseUrl(properties.oauth.baseUrl)
+            .requestFactory(yandexClientHttpRequestFactory)
             .build()
 
 }

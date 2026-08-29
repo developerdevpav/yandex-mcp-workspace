@@ -20,7 +20,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
 import org.springframework.http.HttpStatusCode
+import org.springframework.http.HttpRequest
 import org.springframework.http.client.ClientHttpRequestExecution
 import org.springframework.http.client.ClientHttpResponse
 import org.springframework.http.client.JdkClientHttpRequestFactory
@@ -28,6 +30,9 @@ import org.springframework.web.client.RestClient
 import java.io.IOException
 import java.net.http.HttpClient
 import java.time.Duration
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 
 @DisplayName("Интерсептор повторных запросов (RetryingHttpRequestInterceptor)")
 class RetryingHttpRequestInterceptorTest {
@@ -52,9 +57,9 @@ class RetryingHttpRequestInterceptorTest {
      * добавляется первым, интерсептор повторов — последним. Реальные паузы заменены записью
      * длительностей, чтобы тест выполнялся мгновенно.
      */
-    private fun restClient(retry: RetryProperties): RestClient {
+    private fun restClient(retry: RetryProperties, clock: Clock = Clock.systemUTC()): RestClient {
         val properties = YandexProperties(retry = retry)
-        val retryInterceptor = RetryingHttpRequestInterceptor(properties) { recordedDelays += it }
+        val retryInterceptor = RetryingHttpRequestInterceptor(properties, clock) { recordedDelays += it }
         val httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_1_1).build()
         return RestClient.builder()
             .baseUrl(server.baseUrl())
@@ -168,7 +173,9 @@ class RetryingHttpRequestInterceptorTest {
             if (calls == 1) throw IOException("connection reset") else okResponse
         }
 
-        val result = interceptor.intercept(mockk(relaxed = true), ByteArray(0), execution)
+        val request = mockk<HttpRequest>(relaxed = true)
+        every { request.method } returns HttpMethod.GET
+        val result = interceptor.intercept(request, ByteArray(0), execution)
 
         assertThat(result).isSameAs(okResponse)
         assertThat(calls).isEqualTo(2)
@@ -182,11 +189,53 @@ class RetryingHttpRequestInterceptorTest {
         val interceptor = RetryingHttpRequestInterceptor(properties) { recordedDelays += it }
         val execution = ClientHttpRequestExecution { _, _ -> throw IOException("service down") }
 
-        assertThatThrownBy { interceptor.intercept(mockk(relaxed = true), ByteArray(0), execution) }
+        val request = mockk<HttpRequest>(relaxed = true)
+        every { request.method } returns HttpMethod.GET
+        assertThatThrownBy { interceptor.intercept(request, ByteArray(0), execution) }
             .isInstanceOf(IOException::class.java)
             .hasMessageContaining("service down")
 
         assertThat(recordedDelays).hasSize(1)
+    }
+
+    @Test
+    @DisplayName("Неидемпотентный POST не повторяется после ответа 503")
+    fun `does not retry post on server error`() {
+        val properties = YandexProperties(retry = RetryProperties(maxAttempts = 3))
+        val interceptor = RetryingHttpRequestInterceptor(properties) { recordedDelays += it }
+        val response = mockk<ClientHttpResponse>(relaxed = true)
+        every { response.statusCode } returns HttpStatusCode.valueOf(503)
+        var calls = 0
+        val execution = ClientHttpRequestExecution { _, _ -> calls++; response }
+        val request = mockk<HttpRequest>(relaxed = true)
+        every { request.method } returns HttpMethod.POST
+
+        interceptor.intercept(request, ByteArray(0), execution)
+
+        assertThat(calls).isEqualTo(1)
+        assertThat(recordedDelays).isEmpty()
+    }
+
+    @Test
+    @DisplayName("Retry-After в формате HTTP-date преобразуется в задержку")
+    fun `honors Retry-After http date`() {
+        val scenario = "retry-after-date"
+        server.stubFor(
+            get(urlEqualTo("/v3/myself")).inScenario(scenario)
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willReturn(aResponse().withStatus(429).withHeader(HttpHeaders.RETRY_AFTER, "Tue, 01 Jan 2030 00:00:03 GMT"))
+                .willSetStateTo("ok"),
+        )
+        server.stubFor(
+            get(urlEqualTo("/v3/myself")).inScenario(scenario)
+                .whenScenarioStateIs("ok")
+                .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody("{}")),
+        )
+        val clock = Clock.fixed(Instant.parse("2030-01-01T00:00:00Z"), ZoneOffset.UTC)
+
+        call(restClient(RetryProperties(maxDelay = Duration.ofSeconds(10)), clock), "/v3/myself")
+
+        assertThat(recordedDelays).containsExactly(3000L)
     }
 
     @Test

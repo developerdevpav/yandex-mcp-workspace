@@ -8,9 +8,10 @@
 |---|---|---|
 | [overview.md](./overview.md) | все | структура проекта, модули, образы Docker |
 | [credentials.md](./credentials.md) | пользователь | где создать OAuth-приложение, взять ключи и ID организации |
-| [setup.md](./setup.md) | пользователь | OAuth, том с токенами, первый запуск |
+| [setup.md](./setup.md) | пользователь | локальный запуск без Docker, OAuth, команды setup/login/doctor |
 | [configuration.md](./configuration.md) | администратор | переменные окружения по серверам |
-| [mcp-clients.md](./mcp-clients.md) | пользователь | Cursor, Codex, проверка подключения |
+| [mcp-clients.md](./mcp-clients.md) | пользователь | Claude, ChatGPT Codex, Cursor и проверка подключения |
+| [releases.md](./releases.md) | пользователь / разработчик | скачивание, версии, артефакты и проверка релиза |
 | [troubleshooting.md](./troubleshooting.md) | поддержка | типичные ошибки и решения |
 | [development.md](./development.md) | разработчик | сборка, тесты, релизы |
 

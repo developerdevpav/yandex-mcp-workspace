@@ -25,20 +25,18 @@ class WikiWriteTools(
     @Tool(
         name = "wiki_page_create",
         description = "Создаёт страницу Wiki. Содержимое передаётся в формате Markdown. " +
-            "Расположение задаётся через slug или parentId.",
+            "Расположение задаётся обязательным slug.",
     )
     fun pageCreate(
         @ToolParam(description = "Заголовок страницы")
         title: String,
-        @ToolParam(required = false, description = "Адрес страницы, например team/onboarding")
-        slug: String?,
-        @ToolParam(required = false, description = "Идентификатор родительской страницы")
-        parentId: String?,
+        @ToolParam(description = "Адрес страницы, например team/onboarding")
+        slug: String,
         @ToolParam(required = false, description = "Содержимое страницы в формате Markdown")
         content: String?,
         @ToolParam(required = false, description = "JSON-объект дополнительных полей")
         fields: String?,
-    ): String = render(wikiWriteService.createPage(title, slug, parentId, content, fields))
+    ): String = render(wikiWriteService.createPage(title, slug, content, fields))
 
     @Tool(
         name = "wiki_page_update",
@@ -75,20 +73,19 @@ class WikiWriteTools(
 
     @Tool(
         name = "wiki_page_clone",
-        description = "Клонирует страницу Wiki в целевое расположение (slug или parentId).",
+        description = "Запускает асинхронное клонирование страницы Wiki в target. " +
+            "Статус проверяется инструментом wiki_clone_operation_get.",
     )
     fun pageClone(
         @ToolParam(description = "Идентификатор исходной страницы")
         id: String,
-        @ToolParam(required = false, description = "Адрес целевого расположения")
-        slug: String?,
-        @ToolParam(required = false, description = "Идентификатор целевой родительской страницы")
-        parentId: String?,
+        @ToolParam(description = "Адрес страницы после копирования")
+        target: String,
         @ToolParam(required = false, description = "Заголовок клона")
         title: String?,
-        @ToolParam(required = false, description = "JSON-объект дополнительных полей")
-        fields: String?,
-    ): String = render(wikiWriteService.clonePage(id, slug, parentId, title, fields))
+        @ToolParam(required = false, description = "Подписать текущего пользователя на изменения")
+        subscribeMe: Boolean?,
+    ): String = render(wikiWriteService.clonePage(id, target, title, subscribeMe))
 
     @Tool(
         name = "wiki_page_append_content",
@@ -117,7 +114,17 @@ class WikiWriteTools(
         content: String,
         @ToolParam(required = false, description = "Идентификатор родительского комментария для ответа")
         parentId: String?,
-    ): String = render(wikiWriteService.addComment(id, content, parentId))
+        @ToolParam(required = false, description = "Идентификатор ветки комментариев")
+        threadId: String?,
+        @ToolParam(required = false, description = "Текст страницы, к которому привязан инлайн-комментарий")
+        inlineText: String?,
+    ): String = render(wikiWriteService.addComment(id, content, parentId, threadId, inlineText))
+
+    @Tool(name = "wiki_page_comment_delete", description = "Удаляет комментарий со страницы Wiki.")
+    fun pageCommentDelete(
+        @ToolParam(description = "Идентификатор страницы") id: String,
+        @ToolParam(description = "Идентификатор комментария") commentId: String,
+    ): String = render(wikiWriteService.deleteComment(id, commentId))
 
     @Tool(
         name = "wiki_page_attachment_upload",

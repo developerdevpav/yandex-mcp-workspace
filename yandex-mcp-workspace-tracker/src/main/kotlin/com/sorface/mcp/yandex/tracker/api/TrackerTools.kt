@@ -42,8 +42,8 @@ class TrackerTools(
 
     @Tool(
         name = "tracker_issue_search",
-        description = "Ищет задачи Tracker по языку запросов или структурному фильтру. " +
-            "Параметр query используется самостоятельно и несовместим с filter/queue/keys.",
+        description = "Ищет задачи Tracker. Укажите ровно один критерий: query, filter, queue или keys. " +
+            "Для queue используйте id из nextPageId; для больших выдач доступны scroll-параметры.",
     )
     fun issueSearch(
         @ToolParam(required = false, description = "Строка на языке запросов Tracker")
@@ -58,18 +58,33 @@ class TrackerTools(
         order: String?,
         @ToolParam(required = false, description = "Доп. блоки данных через запятую")
         expand: String?,
+        @ToolParam(required = false, description = "Поля задачи в ответе через запятую")
+        fields: String?,
         @ToolParam(required = false, description = "Число задач на страницу (по умолчанию 50)")
         perPage: Int?,
         @ToolParam(required = false, description = "Номер страницы, начиная с 1")
         page: Int?,
+        @ToolParam(required = false, description = "Курсор id из nextPageId для поиска по queue")
+        id: String?,
+        @ToolParam(required = false, description = "Тип прокрутки больших результатов: sorted")
+        scrollType: String?,
+        @ToolParam(required = false, description = "Число задач в порции прокрутки")
+        perScroll: Int?,
+        @ToolParam(required = false, description = "Время жизни прокрутки в миллисекундах")
+        scrollTTLMillis: Int?,
+        @ToolParam(required = false, description = "X-Scroll-Id из предыдущего ответа")
+        scrollId: String?,
     ): String {
-        val result = trackerReadService.searchIssues(query, filter, queue, keys, order, expand, perPage, page)
+        val result = trackerReadService.searchIssues(
+            query, filter, queue, keys, order, expand, fields, perPage, page,
+            id, scrollType, perScroll, scrollTTLMillis, scrollId,
+        )
         return renderPaged(result, page, perPage)
     }
 
     @Tool(
         name = "tracker_issue_count",
-        description = "Считает количество задач Tracker по языку запросов или структурному фильтру.",
+        description = "Считает задачи Tracker. Укажите ровно один критерий: query, filter, queue или keys.",
     )
     fun issueCount(
         @ToolParam(required = false, description = "Строка на языке запросов Tracker")
@@ -152,18 +167,28 @@ class TrackerTools(
         type: String?,
         @ToolParam(required = false, description = "Число записей на страницу")
         perPage: Int?,
-    ): String = renderPaged(trackerReadService.getChangelog(key, field, type, perPage), page = null, perPage = perPage)
+        @ToolParam(required = false, description = "Курсор id из nextPageId предыдущего ответа")
+        id: String?,
+    ): String = renderPaged(
+        trackerReadService.getChangelog(key, field, type, perPage, id),
+        page = null,
+        perPage = perPage,
+    )
 
     @Tool(
         name = "tracker_comment_list",
-        description = "Возвращает список комментариев задачи Tracker.",
+        description = "Возвращает страницу комментариев задачи Tracker и курсор nextPageId.",
     )
     fun commentList(
         @ToolParam(description = "Ключ задачи, например TREK-42")
         key: String,
         @ToolParam(required = false, description = "Доп. блоки данных через запятую: attachments, html")
         expand: String?,
-    ): String = render(trackerReadService.listComments(key, expand))
+        @ToolParam(required = false, description = "Число комментариев на страницу")
+        perPage: Int?,
+        @ToolParam(required = false, description = "Курсор id из nextPageId предыдущего ответа")
+        id: String?,
+    ): String = renderPaged(trackerReadService.listComments(key, expand, perPage, id), page = null, perPage = perPage)
 
     @Tool(
         name = "tracker_link_list",
@@ -249,6 +274,9 @@ class TrackerTools(
         val wrapper = objectMapper.createObjectNode()
         result.totalCount?.let { wrapper.put("totalCount", it) }
         result.totalPages?.let { wrapper.put("totalPages", it) }
+        result.nextPageId?.let { wrapper.put("nextPageId", it) }
+        result.nextPageUrl?.let { wrapper.put("nextPageUrl", it) }
+        result.scrollId?.let { wrapper.put("scrollId", it) }
         page?.let { wrapper.put("page", it) }
         perPage?.let { wrapper.put("perPage", it) }
         wrapper.set<JsonNode>("items", result.items)

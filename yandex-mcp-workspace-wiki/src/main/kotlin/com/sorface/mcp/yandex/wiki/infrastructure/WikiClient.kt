@@ -148,9 +148,28 @@ class WikiClient(
         listOf("human_message", "message", "debug_message", "detail", "error_description")
             .forEach { field -> body.path(field).takeIf { it.isTextual }?.let { parts += it.asText() } }
         body.path("errorMessages").takeIf { it.isArray }?.forEach { parts += it.asText() }
-        body.path("errors").takeIf { it.isObject }?.fields()?.forEach { (field, value) ->
+        body.path("errors").takeIf { it.isObject }?.properties()?.forEach { (field, value) ->
             parts += "$field: ${value.asText()}"
         }
+        collectValidationMessages(body.path("details"), emptyList(), parts)
         return parts.filter { it.isNotBlank() }.distinct().joinToString("; ")
+    }
+
+    /**
+     * Рекурсивно извлекает `debug_message` из вложенной схемы ошибок валидации Wiki и
+     * сохраняет путь к полю (`body.title`, `query.cursor`) для диагностики MCP-вызова.
+     */
+    private fun collectValidationMessages(node: JsonNode, path: List<String>, target: MutableList<String>) {
+        when {
+            node.isObject -> node.properties().forEach { (name, value) ->
+                if (name == "debug_message" && value.isTextual) {
+                    val prefix = path.joinToString(".")
+                    target += if (prefix.isBlank()) value.asText() else "$prefix: ${value.asText()}"
+                } else {
+                    collectValidationMessages(value, path + name, target)
+                }
+            }
+            node.isArray -> node.forEach { collectValidationMessages(it, path, target) }
+        }
     }
 }

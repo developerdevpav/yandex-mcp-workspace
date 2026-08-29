@@ -202,7 +202,21 @@ class DefaultTrackerWriteServiceTest {
     @DisplayName("Добавление worklog без duration приводит к ApiException")
     fun `add worklog without duration raises ApiException`() {
         assertThatThrownBy {
-            service().addWorklog("TREK-1", start = null, duration = "", comment = null, fields = null)
+            service().addWorklog(
+                "TREK-1",
+                start = "2021-09-21T10:30:00.000+0000",
+                duration = "",
+                comment = null,
+                fields = null,
+            )
+        }.isInstanceOf(ApiException::class.java)
+    }
+
+    @Test
+    @DisplayName("Добавление worklog без start приводит к ApiException")
+    fun `add worklog without start raises ApiException`() {
+        assertThatThrownBy {
+            service().addWorklog("TREK-1", start = "", duration = "PT1H", comment = null, fields = null)
         }.isInstanceOf(ApiException::class.java)
     }
 

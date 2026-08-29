@@ -34,6 +34,14 @@ interface AuthService {
     fun completeDeviceAuthorization(authorization: DeviceAuthorization): TokenSet
 
     /**
+     * Выполняет один запрос состояния Device Flow и сохраняет токены при успехе.
+     *
+     * @param authorization данные начатой авторизации
+     * @return текущее состояние подтверждения
+     */
+    fun pollDeviceAuthorization(authorization: DeviceAuthorization): DeviceAuthorizationProgress
+
+    /**
      * Возвращает действующий токен доступа, при необходимости обновляя его.
      *
      * @return токен доступа для заголовка `Authorization`
@@ -46,4 +54,9 @@ interface AuthService {
      * @return сводка состояния
      */
     fun status(): AuthStatus
+
+    /**
+     * Удаляет локальные токены. Повторное обращение к API потребует новой авторизации.
+     */
+    fun logout()
 }

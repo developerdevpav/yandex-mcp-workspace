@@ -1,0 +1,12 @@
+# Скопируйте секции в ~/.codex/config.toml или .codex/config.toml
+# и замените все абсолютные пути.
+
+[mcp_servers.yandex-tracker]
+command = "/absolute/path/to/yandex-mcp-tracker"
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+
+[mcp_servers.yandex-wiki]
+command = "/absolute/path/to/yandex-mcp-wiki"
+startup_timeout_sec = 30
+tool_timeout_sec = 120

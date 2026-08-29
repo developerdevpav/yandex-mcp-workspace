@@ -1,5 +1,6 @@
 package com.sorface.mcp.yandex.wiki
 
+import com.sorface.mcp.yandex.auth.api.normalizeYandexCliArguments
 import com.sorface.mcp.yandex.config.YandexProperties
 import com.sorface.mcp.yandex.wiki.config.WikiApiProperties
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -16,9 +17,12 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 class YandexWikiMcpApplication
 
 fun main(args: Array<String>) {
+    val normalizedArgs = normalizeYandexCliArguments(args)
     val builder = SpringApplicationBuilder(YandexWikiMcpApplication::class.java)
-    if (args.firstOrNull() == "auth") {
+    if (normalizedArgs.firstOrNull()?.lowercase() in CLI_COMMANDS) {
         builder.profiles("auth")
     }
-    builder.run(*args)
+    builder.run(*normalizedArgs)
 }
+
+private val CLI_COMMANDS = setOf("auth", "login", "setup", "logout", "doctor")

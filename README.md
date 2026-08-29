@@ -4,14 +4,11 @@
 
 Репозиторий: [github.com/developerdevpav/yandex-mcp-workspace](https://github.com/developerdevpav/yandex-mcp-workspace). Подробная документация — [docs/](./docs/README.md).
 
-| Сервер | Образ |
-|---|---|
-| Tracker | `ghcr.io/developerdevpav/yandex-mcp-workspace-tracker:latest` |
-| Wiki | `ghcr.io/developerdevpav/yandex-mcp-workspace-wiki:latest` |
-
 ## Требования
 
-- Docker
+- готовый архив из [GitHub Releases](https://github.com/developerdevpav/yandex-mcp-workspace/releases/latest) — Java уже включена
+- либо JRE 21 для запуска отдельного JAR
+- либо Docker как опциональный серверный вариант
 - Приложение [Яндекс OAuth](https://oauth.yandex.ru/) (`client_id`, `client_secret`)
 - `YANDEX_ORG_ID` — идентификатор организации
 
@@ -22,23 +19,25 @@
 
 ## Авторизация
 
-Выполняется **один раз** на машине. Откройте ссылку из терминала и введите код подтверждения (OAuth 2.0 Device Flow). Токены сохраняются в Docker-томе `yandex-mcp-tokens`.
+Docker и установленная Java не обязательны. Скачайте архив своей ОС из GitHub Release, распакуйте и выполните `setup` один раз. Например, в Linux:
 
 ```bash
-docker run -it --rm \
-  -e YANDEX_CLIENT_ID=<client_id> \
-  -e YANDEX_CLIENT_SECRET=<client_secret> \
-  -e YANDEX_ORG_ID=<org_id> \
-  -e YANDEX_ORG_TYPE=YANDEX_360 \
-  -v yandex-mcp-tokens:/data \
-  ghcr.io/developerdevpav/yandex-mcp-workspace-tracker:latest auth
+./app/bin/yandex-mcp-tracker setup
 ```
 
-Для Wiki можно выполнить `auth` с образом `ghcr.io/developerdevpav/yandex-mcp-workspace-wiki:latest`. Если оба сервера используют одно OAuth-приложение и организацию, достаточно одной авторизации в общем томе `yandex-mcp-tokens`.
+Команда откроет браузер, сохранит настройки в `~/.config/yandex-mcp/config.properties`, а токены — в локальном каталоге данных ОС. Для запуска отдельного JAR команда выглядит так:
 
-## Cursor и Codex
+```bash
+java -jar yandex-mcp-workspace-tracker.jar setup
+```
 
-Готовые примеры `mcp.json` и `config.toml` — в [docs/mcp-clients.md](./docs/mcp-clients.md). После сохранения конфигурации в Cursor — перезапуск или *Reload* в *Settings → Tools & MCP*.
+Мастер запросит отсутствующие `client_id`, `client_secret`, идентификатор и тип организации; секрет в обычном терминале вводится без отображения. Параметры CLI остаются доступны для автоматизации.
+
+После подключения MCP авторизацию также можно начать прямо из чата инструментом `yandex_auth_start`, а затем проверить `yandex_auth_poll`. Ссылка и код возвращаются структурированно — искать их в логах не нужно. Docker-сценарий сохранён в [docs/setup.md](./docs/setup.md#docker-опционально).
+
+## Claude, ChatGPT Codex и Cursor
+
+Готовые команды и конфигурации для Claude Desktop/Claude Code, ChatGPT Desktop/Codex и Cursor — в [docs/mcp-clients.md](./docs/mcp-clients.md). Инструкция по скачиванию для каждой ОС — в [docs/setup.md](./docs/setup.md), копируемые файлы — в [examples/mcp](./examples/mcp/).
 
 ## Инструменты
 
@@ -46,10 +45,10 @@ docker run -it --rm \
 
 | Сервер | Модуль | Инструментов | Префиксы |
 |---|---|---:|---|
-| Tracker | `yandex-mcp-workspace-tracker` | 39 | `tracker_*`, `system_*`, `yandex_auth_status` |
-| Wiki | `yandex-mcp-workspace-wiki` | 31 | `wiki_*`, `system_*`, `yandex_auth_status` |
+| Tracker | `yandex-mcp-workspace-tracker` | 42 | `tracker_*`, `system_*`, `yandex_auth_*` |
+| Wiki | `yandex-mcp-workspace-wiki` | 39 | `wiki_*`, `system_*`, `yandex_auth_*` |
 
-В каждом сервере **3 общих** инструмента (служебные + auth) и **доменные** инструменты своего API.
+В каждом сервере **6 общих** инструментов (служебные + auth) и **доменные** инструменты своего API.
 
 ### Условные обозначения
 
@@ -77,12 +76,15 @@ docker run -it --rm \
 | `system_ping` | R | Проверка доступности MCP-сервера, возвращает `pong` |
 | `system_server_info` | R | Режим работы: read-only или read-write |
 | `yandex_auth_status` | R | Состояние OAuth: настройки, наличие токена, срок истечения |
+| `yandex_auth_start` | W | Начать Device Flow, открыть браузер и вернуть ссылку с кодом |
+| `yandex_auth_poll` | R | Проверить состояние сессии с соблюдением интервала OAuth |
+| `yandex_auth_logout` | W | Удалить локальные токены |
 
 ---
 
-### Tracker — 39 инструментов
+### Tracker — 42 инструмента
 
-36 доменных + 3 общих. Префикс доменных: `tracker_*`.
+36 доменных + 6 общих. Префикс доменных: `tracker_*`.
 
 #### Справочники и пользователь
 
@@ -104,9 +106,9 @@ docker run -it --rm \
 | Инструмент | Тип | Описание |
 |---|---|---|
 | `tracker_issue_get` | R | Задача по ключу (например, `TREK-42`) |
-| `tracker_issue_search` | R | Поиск по языку запросов или JSON-фильтру |
+| `tracker_issue_search` | R | Поиск по одному критерию (`query`, `filter`, `queue` или `keys`), включая cursor/scroll |
 | `tracker_issue_count` | R | Количество задач по запросу или фильтру |
-| `tracker_issue_changelog` | R | История изменений задачи |
+| `tracker_issue_changelog` | R | История изменений задачи с курсором `nextPageId` |
 | `tracker_issue_transitions_list` | R | Доступные переходы по статусам |
 
 #### Задачи — запись
@@ -129,7 +131,7 @@ docker run -it --rm \
 
 | Инструмент | Тип | Описание |
 |---|---|---|
-| `tracker_comment_list` | R | Комментарии задачи |
+| `tracker_comment_list` | R | Комментарии задачи с курсором `nextPageId` |
 | `tracker_comment_add` | W | Добавление комментария |
 | `tracker_comment_update` | W | Изменение комментария |
 | `tracker_comment_delete` | W | Удаление комментария |
@@ -156,15 +158,15 @@ docker run -it --rm \
 | Инструмент | Тип | Описание |
 |---|---|---|
 | `tracker_worklog_list` | R | Записи учёта времени задачи |
-| `tracker_worklog_add` | W | Добавление записи (duration в ISO 8601, опционально start, comment) |
+| `tracker_worklog_add` | W | Добавление записи (обязательные start и duration в ISO 8601) |
 | `tracker_worklog_update` | W | Изменение записи по id |
 | `tracker_worklog_delete` | W | Удаление записи по id |
 
 ---
 
-### Wiki — 31 инструмент
+### Wiki — 39 инструментов
 
-28 доменных + 3 общих. Префикс доменных: `wiki_*`. Содержимое страниц — **Markdown**.
+33 доменных + 6 общих. Префикс доменных: `wiki_*`. Содержимое страниц — **Markdown**.
 
 #### Страницы — чтение
 
@@ -173,7 +175,10 @@ docker run -it --rm \
 | `wiki_page_get_by_slug` | R | Страница по slug (например, `team/onboarding`) |
 | `wiki_page_get_by_id` | R | Страница по числовому id |
 | `wiki_page_get_descendants` | R | Дерево вложенных страниц |
+| `wiki_page_get_descendants_by_id` | R | Подстраницы по id родительской страницы |
 | `wiki_page_get_resources` | R | Ресурсы страницы: вложения и таблицы |
+| `wiki_search` | R | Полнотекстовый поиск страниц и файлов |
+| `wiki_clone_operation_get` | R | Статус асинхронного клонирования |
 
 #### Страницы — запись
 
@@ -183,7 +188,7 @@ docker run -it --rm \
 | `wiki_page_update` | W | Изменение заголовка и/или содержимого |
 | `wiki_page_delete` | W | Удаление (в ответе — токен восстановления) |
 | `wiki_page_recover` | W | Восстановление по токену |
-| `wiki_page_clone` | W | Клонирование страницы |
+| `wiki_page_clone` | W | Асинхронное клонирование страницы в обязательный `target` |
 | `wiki_page_append_content` | W | Дописывание Markdown в начало, конец или к якорю |
 
 #### Комментарии и вложения
@@ -191,7 +196,9 @@ docker run -it --rm \
 | Инструмент | Тип | Описание |
 |---|---|---|
 | `wiki_page_comments_list` | R | Комментарии страницы |
+| `wiki_page_comment_thread` | R | Ветка ответов на комментарий |
 | `wiki_page_comment_add` | W | Комментарий или ответ на комментарий |
+| `wiki_page_comment_delete` | W | Удаление комментария |
 | `wiki_page_attachments_list` | R | Вложения страницы |
 | `wiki_page_attachment_upload` | W | Загрузка локального файла и прикрепление |
 | `wiki_page_attachment_attach` | W | Прикрепление завершённых сессий загрузки |
@@ -227,7 +234,7 @@ docker run -it --rm \
 
 ## Проверка
 
-Попросите агента вызвать `system_ping` → `pong`, затем `yandex_auth_status` → `авторизован: да`.
+Попросите агента вызвать `system_ping` → `pong`, затем `yandex_auth_status`. Если токена нет, агент может вызвать `yandex_auth_start`, показать ссылку и после подтверждения выполнить `yandex_auth_poll`.
 
 ## Документация
 
@@ -237,7 +244,7 @@ docker run -it --rm \
 | Обзор и модули | [docs/overview.md](./docs/overview.md) |
 | Переменные окружения | [docs/configuration.md](./docs/configuration.md) |
 | Установка и OAuth | [docs/setup.md](./docs/setup.md) |
-| Cursor / Codex | [docs/mcp-clients.md](./docs/mcp-clients.md) |
+| Claude / ChatGPT Codex / Cursor | [docs/mcp-clients.md](./docs/mcp-clients.md) |
 | Tracker / Wiki | [docs/tracker.md](./docs/tracker.md), [docs/wiki.md](./docs/wiki.md) |
 | Endpoint API | [docs/capabilities/](./docs/capabilities/README.md) |
 | Разработка | [docs/development.md](./docs/development.md) |

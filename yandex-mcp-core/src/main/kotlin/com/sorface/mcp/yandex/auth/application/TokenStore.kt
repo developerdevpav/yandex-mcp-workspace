@@ -29,4 +29,23 @@ interface TokenStore {
      * Удаляет сохранённые токены.
      */
     fun clear()
+
+    /**
+     * Выполняет согласованное чтение и условную замену токена под эксклюзивной блокировкой.
+     *
+     * Реализация должна удерживать межпроцессную блокировку в течение всего [transform], чтобы
+     * два MCP-процесса не обновляли один refresh token одновременно. Если результат равен
+     * исходному значению, повторная запись не требуется.
+     *
+     * @param transform преобразование текущего значения; может выполнять сетевой refresh
+     * @return итоговое значение токена
+     */
+    fun update(transform: (TokenSet?) -> TokenSet?): TokenSet? {
+        val current = load()
+        val updated = transform(current)
+        if (updated != current) {
+            if (updated == null) clear() else save(updated)
+        }
+        return updated
+    }
 }

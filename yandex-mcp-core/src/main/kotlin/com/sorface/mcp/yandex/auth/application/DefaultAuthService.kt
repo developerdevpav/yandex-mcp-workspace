@@ -33,31 +33,26 @@ class DefaultAuthService(
     private val lock = ReentrantLock()
 
     override fun beginDeviceAuthorization(): DeviceAuthorization {
-        requireConfigured()
+        requireOAuthConfigured()
         return oauthClient.requestDeviceCode(properties.oauth.scopes)
     }
 
     override fun completeDeviceAuthorization(authorization: DeviceAuthorization): TokenSet {
-        requireConfigured()
+        requireOAuthConfigured()
         val deadline = clock.instant().plusSeconds(authorization.expiresInSeconds.toLong())
         var intervalMillis = authorization.intervalSeconds.coerceAtLeast(1) * 1000L
 
         while (clock.instant().isBefore(deadline)) {
             Thread.sleep(intervalMillis)
-            when (val result = oauthClient.pollToken(authorization.deviceCode)) {
-                is TokenPollResult.Success -> {
-                    tokenStore.save(result.tokenSet)
-                    logger.info("Авторизация подтверждена, токены сохранены")
-                    return result.tokenSet
-                }
-
-                is TokenPollResult.Pending -> {
+            when (val result = pollDeviceAuthorization(authorization)) {
+                is DeviceAuthorizationProgress.Authorized -> return result.tokenSet
+                is DeviceAuthorizationProgress.Pending -> {
                     if (result.slowDown) {
                         intervalMillis += 5000L
                     }
                 }
 
-                is TokenPollResult.Failure -> throw AuthorizationException(
+                is DeviceAuthorizationProgress.Failed -> throw AuthorizationException(
                     "Авторизация не завершена: ${result.error}" +
                         (result.description?.let { " ($it)" } ?: ""),
                 )
@@ -66,24 +61,39 @@ class DefaultAuthService(
         throw AuthorizationException("Истёк срок ожидания подтверждения авторизации")
     }
 
-    override fun currentAccessToken(): String = lock.withLock {
-        val current = tokenStore.load()
-            ?: throw AuthorizationException("Токен не найден. Выполните авторизацию командой 'auth'.")
+    override fun pollDeviceAuthorization(authorization: DeviceAuthorization): DeviceAuthorizationProgress {
+        requireOAuthConfigured()
+        return when (val result = oauthClient.pollToken(authorization.deviceCode)) {
+            is TokenPollResult.Success -> {
+                tokenStore.save(result.tokenSet)
+                logger.info("Авторизация подтверждена, токены сохранены")
+                DeviceAuthorizationProgress.Authorized(result.tokenSet)
+            }
 
-        if (!current.isExpiring(clock.instant(), EXPIRY_SKEW_SECONDS)) {
-            return current.accessToken
+            is TokenPollResult.Pending -> DeviceAuthorizationProgress.Pending(result.slowDown)
+            is TokenPollResult.Failure -> DeviceAuthorizationProgress.Failed(result.error, result.description)
         }
+    }
 
-        val refreshToken = current.refreshToken
-            ?: throw AuthorizationException("Токен истёк, токен обновления отсутствует. Требуется повторная авторизация.")
+    override fun currentAccessToken(): String = lock.withLock {
+        tokenStore.update { current ->
+            current ?: throw AuthorizationException(
+                "AUTH_REQUIRED: токен не найден. Вызовите MCP-инструмент yandex_auth_start.",
+            )
 
-        logger.info("Токен доступа истекает, выполняется обновление")
-        val refreshed = oauthClient.refresh(refreshToken)
-        val stored = refreshed.copy(
-            refreshToken = refreshed.refreshToken ?: current.refreshToken,
-        )
-        tokenStore.save(stored)
-        stored.accessToken
+            if (!current.isExpiring(clock.instant(), EXPIRY_SKEW_SECONDS)) {
+                return@update current
+            }
+
+            val refreshToken = current.refreshToken
+                ?: throw AuthorizationException(
+                    "AUTH_REQUIRED: токен истёк и не может быть обновлён. Вызовите yandex_auth_start.",
+                )
+
+            logger.info("Токен доступа истекает, выполняется обновление")
+            val refreshed = oauthClient.refresh(refreshToken)
+            refreshed.copy(refreshToken = refreshed.refreshToken ?: current.refreshToken)
+        }?.accessToken ?: throw AuthorizationException("AUTH_REQUIRED: токен не найден.")
     }
 
     override fun status(): AuthStatus {
@@ -97,15 +107,20 @@ class DefaultAuthService(
         )
     }
 
+    override fun logout() {
+        lock.withLock { tokenStore.clear() }
+        logger.info("Локальные токены авторизации удалены")
+    }
+
     private fun isConfigured(): Boolean =
         properties.clientId.isNotBlank() &&
             properties.clientSecret.isNotBlank() &&
             properties.orgId.isNotBlank()
 
-    private fun requireConfigured() {
-        if (!isConfigured()) {
+    private fun requireOAuthConfigured() {
+        if (properties.clientId.isBlank() || properties.clientSecret.isBlank()) {
             throw AuthorizationException(
-                "Не заданы обязательные настройки: client_id, client_secret и идентификатор организации.",
+                "Не заданы обязательные настройки OAuth: client_id и client_secret.",
             )
         }
     }

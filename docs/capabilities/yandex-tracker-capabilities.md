@@ -2,7 +2,7 @@
 
 ## Краткое описание
 
-Документ фиксирует фактически реализованные инструменты `yandex-mcp-workspace-tracker`. Сервер предоставляет 39 MCP-инструментов: 3 общих (`system_*`, `yandex_auth_status`), 21 инструмент чтения Tracker и 15 изменяющих инструментов Tracker.
+Документ фиксирует фактически реализованные инструменты `yandex-mcp-workspace-tracker`. Сервер предоставляет 42 MCP-инструмента: 6 общих (`system_*`, `yandex_auth_*`), 21 инструмент чтения Tracker и 15 изменяющих инструментов Tracker.
 
 ## Как это работает
 
@@ -11,7 +11,7 @@
 - `Authorization: OAuth <токен>`;
 - `X-Org-ID` для `YANDEX_360` или `X-Cloud-Org-ID` для `YANDEX_CLOUD`.
 
-Постраничные методы возвращают объект с `items` и метаданными `totalCount`, `totalPages`, `page`, `perPage`, если эти данные доступны в ответе API.
+Постраничные методы возвращают `items`, обычные метаданные `totalCount`/`totalPages` и курсорные поля `nextPageId`/`nextPageUrl`. Для больших поисковых выдач также возвращается `scrollId`.
 
 ## Общие инструменты сервера
 
@@ -20,6 +20,9 @@
 | `system_ping` | R | Проверка доступности сервера |
 | `system_server_info` | R | Информация о режиме чтения/записи |
 | `yandex_auth_status` | R | Состояние OAuth-настроек и сохранённого токена |
+| `yandex_auth_start` | W | Начать Device Flow и вернуть ссылку с кодом |
+| `yandex_auth_poll` | R | Проверить состояние сессии авторизации |
+| `yandex_auth_logout` | W | Удалить локальные токены |
 
 ## Инструменты Tracker
 
@@ -45,8 +48,8 @@
 | Инструмент | Действие | Метод и endpoint | Тип |
 |---|---|---|---|
 | `tracker_issue_get` | Получить задачу по ключу | `GET /v3/issues/{key}` | R |
-| `tracker_issue_search` | Найти задачи по query или filter | `POST /v3/issues/_search` | R |
-| `tracker_issue_count` | Посчитать задачи по query или filter | `POST /v3/issues/_count` | R |
+| `tracker_issue_search` | Найти задачи по одному из `query`, `filter`, `queue`, `keys`; page/cursor/scroll | `POST /v3/issues/_search` | R |
+| `tracker_issue_count` | Посчитать задачи по одному из `query`, `filter`, `queue`, `keys` | `POST /v3/issues/_count` | R |
 | `tracker_issue_create` | Создать задачу | `POST /v3/issues` | W |
 | `tracker_issue_update` | Изменить поля задачи | `PATCH /v3/issues/{key}` | W |
 | `tracker_issue_move` | Перенести задачу в другую очередь | `POST /v3/issues/{key}/_move` | W |

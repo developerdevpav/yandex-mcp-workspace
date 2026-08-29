@@ -41,8 +41,14 @@ interface TrackerReadService {
      * @param keys ключи задач через запятую для точечной выборки
      * @param order поле и направление сортировки, например `+status`
      * @param expand дополнительные блоки данных через запятую
+     * @param fields поля задачи, которые нужно включить в ответ, через запятую
      * @param perPage число задач на страницу
      * @param page номер страницы, начиная с 1
+     * @param id курсор следующей страницы для поиска по `queue`
+     * @param scrollType тип прокрутки (`sorted`) для результатов свыше 10000 задач
+     * @param perScroll число задач в одной порции прокрутки
+     * @param scrollTTLMillis время жизни контекста прокрутки в миллисекундах
+     * @param scrollId идентификатор следующей порции прокрутки
      * @return страница задач со сведениями о пагинации
      */
     fun searchIssues(
@@ -52,8 +58,14 @@ interface TrackerReadService {
         keys: String?,
         order: String?,
         expand: String?,
+        fields: String?,
         perPage: Int?,
         page: Int?,
+        id: String?,
+        scrollType: String?,
+        perScroll: Int?,
+        scrollTTLMillis: Int?,
+        scrollId: String?,
     ): PagedResult
 
     /**
@@ -129,18 +141,21 @@ interface TrackerReadService {
      * @param field идентификатор поля для фильтрации записей истории, если задан
      * @param type тип изменения для фильтрации (`IssueUpdated`, `IssueWorkflow` и т. п.), если задан
      * @param perPage число записей на страницу
+     * @param id идентификатор записи, после которой начинается следующая страница
      * @return страница записей истории со сведениями о пагинации
      */
-    fun getChangelog(key: String, field: String?, type: String?, perPage: Int?): PagedResult
+    fun getChangelog(key: String, field: String?, type: String?, perPage: Int?, id: String?): PagedResult
 
     /**
      * Возвращает список комментариев задачи.
      *
      * @param key ключ задачи
      * @param expand дополнительные блоки данных через запятую (`attachments`, `html`)
-     * @return массив комментариев
+     * @param perPage число комментариев на странице
+     * @param id идентификатор комментария, после которого начинается следующая страница
+     * @return страница комментариев со ссылкой на продолжение
      */
-    fun listComments(key: String, expand: String?): JsonNode
+    fun listComments(key: String, expand: String?, perPage: Int?, id: String?): PagedResult
 
     /**
      * Возвращает список связей задачи.

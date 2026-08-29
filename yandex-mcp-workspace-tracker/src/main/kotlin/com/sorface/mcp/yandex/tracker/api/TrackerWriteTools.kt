@@ -235,8 +235,8 @@ class TrackerWriteTools(
         key: String,
         @ToolParam(description = "Затраченное время в формате ISO 8601, например PT2H30M")
         duration: String,
-        @ToolParam(required = false, description = "Дата и время начала работы в формате ISO 8601")
-        start: String?,
+        @ToolParam(description = "Дата и время начала работы, например 2021-09-21T15:30:00.000+0500")
+        start: String,
         @ToolParam(required = false, description = "Комментарий к записи")
         comment: String?,
         @ToolParam(required = false, description = "JSON-объект дополнительных полей")

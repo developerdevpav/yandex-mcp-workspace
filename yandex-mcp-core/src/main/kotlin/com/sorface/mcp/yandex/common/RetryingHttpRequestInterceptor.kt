@@ -3,11 +3,16 @@ package com.sorface.mcp.yandex.common
 import com.sorface.mcp.yandex.config.YandexProperties
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpMethod
 import org.springframework.http.HttpRequest
 import org.springframework.http.client.ClientHttpRequestExecution
 import org.springframework.http.client.ClientHttpRequestInterceptor
 import org.springframework.http.client.ClientHttpResponse
 import java.io.IOException
+import java.time.Clock
+import java.time.Duration
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.math.min
 import kotlin.math.pow
 
@@ -15,10 +20,9 @@ import kotlin.math.pow
  * Интерсептор повторных запросов к API Яндекса при временных сбоях.
  *
  * Повтор выполняется при сетевых ошибках ([IOException]), превышении лимита запросов (`429`)
- * и временных ошибках сервиса (`5xx`). Задержка между попытками растёт экспоненциально согласно
- * настройкам [YandexProperties.RetryProperties]; для ответа `429` с заголовком `Retry-After`
- * используется указанное в нём время. Ответы с прочими статусами (включая `4xx`, кроме `429`)
- * и неретраебельные ошибки пробрасываются без повтора.
+ * и временных ошибках сервиса. Сетевые ошибки и `5xx` повторяются только для идемпотентных
+ * методов, чтобы неоднозначный сбой после `POST` не создал дубликат объекта. Задержка растёт
+ * экспоненциально; `Retry-After` поддерживается и в секундах, и в формате HTTP-date.
  *
  * Интерсептор должен быть последним в цепочке: повторный вызов [ClientHttpRequestExecution.execute]
  * формирует новый фактический HTTP-запрос, поэтому добавленные ранее заголовки авторизации
@@ -28,6 +32,7 @@ import kotlin.math.pow
  */
 class RetryingHttpRequestInterceptor(
     private val properties: YandexProperties,
+    private val clock: Clock = Clock.systemUTC(),
     private val sleeper: (Long) -> Unit = { millis -> if (millis > 0) Thread.sleep(millis) },
 ) : ClientHttpRequestInterceptor {
 
@@ -44,7 +49,10 @@ class RetryingHttpRequestInterceptor(
             val outcome = runCatching { execution.execute(request, body) }
 
             outcome.exceptionOrNull()?.let { failure ->
-                if (failure is IOException && retry.enabled && attempt < retry.maxAttempts) {
+                if (
+                    failure is IOException && retry.enabled && attempt < retry.maxAttempts &&
+                    request.method in IDEMPOTENT_METHODS
+                ) {
                     waitBeforeRetry(attempt, delayForAttempt(attempt), request, failure.toString())
                     attempt++
                     return@let
@@ -54,7 +62,7 @@ class RetryingHttpRequestInterceptor(
 
             val response = outcome.getOrNull() ?: continue
             val status = response.statusCode.value()
-            if (retry.enabled && attempt < retry.maxAttempts && isRetryable(status)) {
+            if (retry.enabled && attempt < retry.maxAttempts && isRetryable(request.method, status)) {
                 val delay = retryAfterMillis(response) ?: delayForAttempt(attempt)
                 response.close()
                 waitBeforeRetry(attempt, delay, request, "HTTP $status")
@@ -68,7 +76,9 @@ class RetryingHttpRequestInterceptor(
     /**
      * Признак того, что статус ответа допускает повтор: превышение лимита или временная ошибка сервиса.
      */
-    private fun isRetryable(status: Int): Boolean = status == STATUS_TOO_MANY_REQUESTS || status in 500..599
+    private fun isRetryable(method: HttpMethod, status: Int): Boolean =
+        status == STATUS_TOO_MANY_REQUESTS ||
+            method in IDEMPOTENT_METHODS && (status == STATUS_REQUEST_TIMEOUT || status in RETRYABLE_SERVER_ERRORS)
 
     /**
      * Вычисляет задержку для попытки по экспоненциальной формуле с верхней границей.
@@ -81,13 +91,20 @@ class RetryingHttpRequestInterceptor(
     }
 
     /**
-     * Извлекает задержку из заголовка `Retry-After` (целое число секунд), если он присутствует.
+     * Извлекает задержку из `Retry-After`. Поддерживаются оба формата RFC: число секунд и
+     * HTTP-date. Значение ограничивается настройкой `maxDelay`.
      */
     private fun retryAfterMillis(response: ClientHttpResponse): Long? {
         val header = response.headers.getFirst(HttpHeaders.RETRY_AFTER)?.trim() ?: return null
-        val seconds = header.toLongOrNull() ?: return null
-        if (seconds < 0) return null
-        return min(seconds * 1000, properties.retry.maxDelay.toMillis())
+        val maxDelayMillis = properties.retry.maxDelay.toMillis()
+        header.toLongOrNull()?.let { seconds ->
+            if (seconds < 0) return null
+            return min(seconds.coerceAtMost(Long.MAX_VALUE / 1000) * 1000, maxDelayMillis)
+        }
+        val retryAt = runCatching {
+            ZonedDateTime.parse(header, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant()
+        }.getOrNull() ?: return null
+        return Duration.between(clock.instant(), retryAt).toMillis().coerceIn(0, maxDelayMillis)
     }
 
     /**
@@ -118,5 +135,14 @@ class RetryingHttpRequestInterceptor(
 
     private companion object {
         const val STATUS_TOO_MANY_REQUESTS = 429
+        const val STATUS_REQUEST_TIMEOUT = 408
+        val RETRYABLE_SERVER_ERRORS = 500..504
+        val IDEMPOTENT_METHODS = setOf(
+            HttpMethod.GET,
+            HttpMethod.HEAD,
+            HttpMethod.OPTIONS,
+            HttpMethod.PUT,
+            HttpMethod.DELETE,
+        )
     }
 }

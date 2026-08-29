@@ -25,8 +25,10 @@ JAR после сборки:
 
 ```bash
 java -jar yandex-mcp-workspace-tracker/target/yandex-mcp-workspace-tracker-0.1.0-SNAPSHOT.jar
-java -jar yandex-mcp-workspace-tracker/target/yandex-mcp-workspace-tracker-0.1.0-SNAPSHOT.jar auth
+java -jar yandex-mcp-workspace-tracker/target/yandex-mcp-workspace-tracker-0.1.0-SNAPSHOT.jar setup
 ```
+
+`setup` запускает интерактивный мастер. Для CI те же значения можно передать короткими параметрами `--client-id`, `--client-secret` и `--org-id`.
 
 Переменные окружения — как в [configuration.md](./configuration.md).
 
@@ -56,10 +58,13 @@ docker build --build-arg MCP_MODULE=yandex-mcp-workspace-wiki -t yandex-mcp-work
 ## Релизы и CI
 
 - **CI** (`.github/workflows/ci.yml`) — `mvn test` на push/PR в `main`/`master`.
-- **Release** (`.github/workflows/release.yml`) — по тегу `v*`:
-  - сборка JAR без тестов (тесты — в CI);
+- **Release** (`.github/workflows/release.yml`) — по SemVer-тегу `v*` или через ручной запуск:
+  - полный `mvn verify` и установка версии тега в Maven-модули на время CI;
+  - переносимые пакеты со встроенной Java для Linux x64/ARM64, macOS Intel/Apple Silicon и Windows x64;
   - параллельная публикация образов `ghcr.io/<owner>/<repo>-tracker` и `ghcr.io/<owner>/<repo>-wiki` из `Dockerfile.runtime` для `linux/amd64` и `linux/arm64`;
-  - GitHub Release с артефактами JAR.
+  - GitHub Release с пакетами, JAR, SHA-256 и provenance attestations.
+
+Подробно процесс описан в [releases.md](./releases.md).
 
 При репозитории `developerdevpav/yandex-mcp-workspace` образы:
 

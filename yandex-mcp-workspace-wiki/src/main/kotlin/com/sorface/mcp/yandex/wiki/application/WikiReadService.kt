@@ -37,7 +37,26 @@ interface WikiReadService {
      * @param slug адрес родительской страницы
      * @return дерево потомков
      */
-    fun getDescendants(slug: String): JsonNode
+    fun getDescendantsBySlug(
+        slug: String,
+        cursor: String?,
+        pageSize: Int?,
+        actuality: String?,
+        includeSelf: Boolean?,
+        showAll: Boolean?,
+    ): JsonNode
+
+    /**
+     * Возвращает дерево вложенных страниц по идентификатору родительской страницы.
+     */
+    fun getDescendantsById(
+        id: String,
+        cursor: String?,
+        pageSize: Int?,
+        actuality: String?,
+        includeSelf: Boolean?,
+        showAll: Boolean?,
+    ): JsonNode
 
     /**
      * Возвращает ресурсы страницы: вложения и таблицы.
@@ -45,7 +64,7 @@ interface WikiReadService {
      * @param id идентификатор страницы
      * @return ресурсы страницы
      */
-    fun getResources(id: String): JsonNode
+    fun getResources(id: String, cursor: String?, type: String?): JsonNode
 
     /**
      * Возвращает список комментариев страницы.
@@ -53,7 +72,17 @@ interface WikiReadService {
      * @param id идентификатор страницы
      * @return комментарии страницы
      */
-    fun listComments(id: String): JsonNode
+    fun listComments(
+        id: String,
+        cursor: String?,
+        pageSize: Int?,
+        orderBy: String?,
+        orderDirection: String?,
+        statusFilter: String?,
+    ): JsonNode
+
+    /** Возвращает ответы в ветке комментария. */
+    fun getCommentThread(id: String, commentId: String, cursor: String?, pageSize: Int?): JsonNode
 
     /**
      * Возвращает список вложений страницы.
@@ -61,5 +90,24 @@ interface WikiReadService {
      * @param id идентификатор страницы
      * @return вложения страницы
      */
-    fun listAttachments(id: String): JsonNode
+    fun listAttachments(
+        id: String,
+        cursor: String?,
+        pageSize: Int?,
+        orderBy: String?,
+        orderDirection: String?,
+    ): JsonNode
+
+    /** Выполняет полнотекстовый поиск по страницам и файлам Wiki. */
+    fun search(
+        query: String,
+        filters: String?,
+        cursor: Int?,
+        limit: Int?,
+        orderBy: String?,
+        highlight: Boolean?,
+    ): JsonNode
+
+    /** Возвращает состояние асинхронной операции клонирования страницы. */
+    fun getCloneOperationStatus(taskId: String): JsonNode
 }

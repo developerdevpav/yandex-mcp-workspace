@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "yandex-tracker": {
+      "command": "/absolute/path/to/yandex-mcp-tracker"
+    },
+    "yandex-wiki": {
+      "command": "/absolute/path/to/yandex-mcp-wiki"
+    }
+  }
+}

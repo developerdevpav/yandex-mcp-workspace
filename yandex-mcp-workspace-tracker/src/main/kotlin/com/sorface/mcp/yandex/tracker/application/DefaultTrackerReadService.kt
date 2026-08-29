@@ -35,14 +35,29 @@ class DefaultTrackerReadService(
         keys: String?,
         order: String?,
         expand: String?,
+        fields: String?,
         perPage: Int?,
         page: Int?,
+        id: String?,
+        scrollType: String?,
+        perScroll: Int?,
+        scrollTTLMillis: Int?,
+        scrollId: String?,
     ): PagedResult {
         val body = buildSearchBody(query, filter, queue, keys, order)
+        if (!queue.isNullOrBlank() && page != null) {
+            throw ApiException(400, "Для поиска по queue используйте курсор id, параметр page не поддерживается")
+        }
         val pageQuery = mapOf(
             "expand" to expand,
+            "fields" to fields,
             "perPage" to perPage?.toString(),
             "page" to page?.toString(),
+            "id" to id,
+            "scrollType" to scrollType,
+            "perScroll" to perScroll?.toString(),
+            "scrollTTLMillis" to scrollTTLMillis?.toString(),
+            "scrollId" to scrollId,
         )
         return trackerClient.postPaged("/v3/issues/_search", body, pageQuery)
     }
@@ -76,18 +91,26 @@ class DefaultTrackerReadService(
     override fun listTransitions(key: String): JsonNode =
         trackerClient.get("/v3/issues/$key/transitions")
 
-    override fun getChangelog(key: String, field: String?, type: String?, perPage: Int?): PagedResult =
+    override fun getChangelog(key: String, field: String?, type: String?, perPage: Int?, id: String?): PagedResult =
         trackerClient.getPaged(
             "/v3/issues/$key/changelog",
             mapOf(
                 "field" to field,
                 "type" to type,
                 "perPage" to perPage?.toString(),
+                "id" to id,
             ),
         )
 
-    override fun listComments(key: String, expand: String?): JsonNode =
-        trackerClient.get("/v3/issues/$key/comments", mapOf("expand" to expand))
+    override fun listComments(key: String, expand: String?, perPage: Int?, id: String?): PagedResult =
+        trackerClient.getPaged(
+            "/v3/issues/$key/comments",
+            mapOf(
+                "expand" to expand,
+                "perPage" to perPage?.toString(),
+                "id" to id,
+            ),
+        )
 
     override fun listLinks(key: String): JsonNode =
         trackerClient.get("/v3/issues/$key/links")
@@ -119,9 +142,9 @@ class DefaultTrackerReadService(
     /**
      * Собирает тело запроса для `_search` и `_count`.
      *
-     * Язык запросов (`query`) в Tracker используется самостоятельно и несовместим со
-     * структурным фильтром, поэтому при заданном `query` остальные параметры фильтрации
-     * игнорируются. Иначе формируется объект `filter` с учётом очереди и ключей.
+     * API Tracker принимает ровно один критерий поиска: `query`, `filter`, `queue` или `keys`.
+     * Смешивание критериев не допускается, потому что Tracker молча выбирает один из них по
+     * внутреннему приоритету и возвращает неожиданный для вызывающей стороны результат.
      */
     private fun buildSearchBody(
         query: String?,
@@ -130,20 +153,15 @@ class DefaultTrackerReadService(
         keys: String?,
         order: String?,
     ): ObjectNode {
+        val criteriaCount = listOf(query, filter, queue, keys).count { !it.isNullOrBlank() }
+        if (criteriaCount != 1) {
+            throw ApiException(400, "Укажите ровно один критерий поиска: query, filter, queue или keys")
+        }
+
         val body = objectMapper.createObjectNode()
-
-        if (!query.isNullOrBlank()) {
-            body.put("query", query)
-            order?.takeIf { it.isNotBlank() }?.let { body.put("order", it) }
-            return body
-        }
-
-        val filterNode: ObjectNode = parseFilter(filter)
-        queue?.takeIf { it.isNotBlank() }?.let { filterNode.put("queue", it) }
-        if (!filterNode.isEmpty) {
-            body.set<ObjectNode>("filter", filterNode)
-        }
-
+        query?.takeIf { it.isNotBlank() }?.let { body.put("query", it) }
+        filter?.takeIf { it.isNotBlank() }?.let { body.set<ObjectNode>("filter", parseFilter(it)) }
+        queue?.takeIf { it.isNotBlank() }?.let { body.put("queue", it) }
         keys?.takeIf { it.isNotBlank() }
             ?.split(",")
             ?.map { it.trim() }

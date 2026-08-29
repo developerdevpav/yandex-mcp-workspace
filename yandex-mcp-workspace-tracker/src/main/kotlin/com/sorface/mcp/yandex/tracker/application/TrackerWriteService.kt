@@ -192,7 +192,7 @@ interface TrackerWriteService {
      */
     fun addWorklog(
         key: String,
-        start: String?,
+        start: String,
         duration: String,
         comment: String?,
         fields: String?,

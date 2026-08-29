@@ -23,7 +23,7 @@ class WikiToolsConfigurationTest {
         configuration.wikiToolCallbackProvider(
             properties = YandexProperties(readOnly = readOnly),
             systemTools = SystemTools(YandexProperties(readOnly = readOnly)),
-            authTools = AuthTools(mockk(relaxed = true)),
+            authTools = AuthTools(mockk(relaxed = true), mockk(relaxed = true), mockk(relaxed = true)),
             wikiTools = WikiTools(mockk(relaxed = true), objectMapper),
             wikiWriteTools = WikiWriteTools(mockk(relaxed = true), objectMapper),
             wikiGridTools = WikiGridTools(mockk(relaxed = true), objectMapper),
@@ -37,7 +37,7 @@ class WikiToolsConfigurationTest {
     fun `registers only wiki tools`() {
         val names = toolNames(provider(readOnly = false))
 
-        assertThat(names).contains("system_ping", "yandex_auth_status", "wiki_page_get_by_slug", "wiki_page_create")
+        assertThat(names).contains("system_ping", "yandex_auth_status", "yandex_auth_start", "yandex_auth_poll", "yandex_auth_logout", "wiki_page_get_by_slug", "wiki_page_create")
         assertThat(names).noneMatch { it.startsWith("tracker_") }
     }
 

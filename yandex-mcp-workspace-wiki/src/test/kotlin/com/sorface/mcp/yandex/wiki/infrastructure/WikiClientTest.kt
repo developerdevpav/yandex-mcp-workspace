@@ -137,4 +137,24 @@ class WikiClientTest {
             .hasMessageContaining("Wiki")
             .hasMessageContaining("Страница не найдена")
     }
+
+    @Test
+    @DisplayName("Вложенная ошибка валидации Wiki содержит путь и пояснение поля")
+    fun `maps nested validation details`() {
+        server.stubFor(
+            get(urlEqualTo("/v1/pages/10")).willReturn(
+                aResponse()
+                    .withStatus(400)
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(
+                        """{"debug_message":"Validation failed","details":{"query":{"fields":[{"debug_message":"Unknown field"}]}}}""",
+                    ),
+            ),
+        )
+
+        assertThatThrownBy { client.get("/v1/pages/10") }
+            .isInstanceOf(ApiException::class.java)
+            .hasMessageContaining("query.fields")
+            .hasMessageContaining("Unknown field")
+    }
 }

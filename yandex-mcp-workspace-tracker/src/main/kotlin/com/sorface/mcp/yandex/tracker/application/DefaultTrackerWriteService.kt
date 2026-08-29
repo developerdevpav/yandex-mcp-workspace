@@ -153,12 +153,15 @@ class DefaultTrackerWriteService(
 
     override fun addWorklog(
         key: String,
-        start: String?,
+        start: String,
         duration: String,
         comment: String?,
         fields: String?,
     ): JsonNode {
         writeGuard.ensureWritable("добавление записи учёта времени")
+        if (start.isBlank()) {
+            throw ApiException(400, "Параметр start обязателен")
+        }
         val body = buildWorklogBody(start, duration, comment, fields)
         return trackerClient.post("/v3/issues/$key/worklog", body)
     }

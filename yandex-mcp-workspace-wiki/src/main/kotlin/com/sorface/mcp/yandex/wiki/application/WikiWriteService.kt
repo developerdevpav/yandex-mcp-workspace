@@ -20,13 +20,12 @@ interface WikiWriteService {
      * Создаёт страницу.
      *
      * @param title заголовок страницы
-     * @param slug адрес страницы; если не задан, расположение определяется по `parentId`
-     * @param parentId идентификатор родительской страницы
+     * @param slug адрес страницы
      * @param content содержимое страницы в формате Markdown
      * @param fields JSON-объект дополнительных полей
      * @return созданная страница
      */
-    fun createPage(title: String, slug: String?, parentId: String?, content: String?, fields: String?): JsonNode
+    fun createPage(title: String, slug: String, content: String?, fields: String?): JsonNode
 
     /**
      * Изменяет заголовок и/или содержимое страницы.
@@ -59,13 +58,12 @@ interface WikiWriteService {
      * Клонирует страницу в целевое расположение.
      *
      * @param id идентификатор исходной страницы
-     * @param slug адрес целевого расположения
-     * @param parentId идентификатор целевой родительской страницы
+     * @param target адрес страницы после копирования
      * @param title заголовок клона
-     * @param fields JSON-объект дополнительных полей
-     * @return созданный клон
+     * @param subscribeMe подписать текущего пользователя на изменения клона
+     * @return описание асинхронной операции и адрес проверки статуса
      */
-    fun clonePage(id: String, slug: String?, parentId: String?, title: String?, fields: String?): JsonNode
+    fun clonePage(id: String, target: String, title: String?, subscribeMe: Boolean?): JsonNode
 
     /**
      * Дописывает содержимое к странице.
@@ -87,7 +85,16 @@ interface WikiWriteService {
      * @param parentId идентификатор родительского комментария для ответа
      * @return созданный комментарий
      */
-    fun addComment(id: String, content: String, parentId: String?): JsonNode
+    fun addComment(
+        id: String,
+        content: String,
+        parentId: String?,
+        threadId: String?,
+        inlineText: String?,
+    ): JsonNode
+
+    /** Удаляет комментарий со страницы. */
+    fun deleteComment(id: String, commentId: String): JsonNode
 
     /**
      * Загружает локальный файл и прикрепляет его к странице.

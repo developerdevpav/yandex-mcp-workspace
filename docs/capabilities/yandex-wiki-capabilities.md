@@ -2,7 +2,7 @@
 
 ## Краткое описание
 
-Документ фиксирует фактически реализованные инструменты `yandex-mcp-workspace-wiki`. Сервер предоставляет 31 MCP-инструмент: 3 общих (`system_*`, `yandex_auth_status`), 8 инструментов чтения Wiki и таблиц, 20 изменяющих инструментов страниц, вложений и динамических таблиц.
+Документ фиксирует фактически реализованные инструменты `yandex-mcp-workspace-wiki`. Сервер предоставляет 39 MCP-инструментов: 6 общих (`system_*`, `yandex_auth_*`), 12 инструментов чтения Wiki и таблиц, 21 изменяющий инструмент страниц, вложений и динамических таблиц.
 
 ## Как это работает
 
@@ -20,6 +20,9 @@
 | `system_ping` | R | Проверка доступности сервера |
 | `system_server_info` | R | Информация о режиме чтения/записи |
 | `yandex_auth_status` | R | Состояние OAuth-настроек и сохранённого токена |
+| `yandex_auth_start` | W | Начать Device Flow и вернуть ссылку с кодом |
+| `yandex_auth_poll` | R | Проверить состояние сессии авторизации |
+| `yandex_auth_logout` | W | Удалить локальные токены |
 
 ## Инструменты Wiki
 
@@ -32,12 +35,15 @@
 | `wiki_page_get_by_slug` | Получить страницу по slug | `GET /v1/pages?slug=...` | R |
 | `wiki_page_get_by_id` | Получить страницу по id | `GET /v1/pages/{id}` | R |
 | `wiki_page_get_descendants` | Получить дерево вложенных страниц | `GET /v1/pages/descendants?slug=...` | R |
+| `wiki_page_get_descendants_by_id` | Получить подстраницы по id | `GET /v1/pages/{id}/descendants` | R |
 | `wiki_page_get_resources` | Получить ресурсы страницы | `GET /v1/pages/{id}/resources` | R |
+| `wiki_search` | Найти страницы и файлы | `POST /v1/search` | R |
+| `wiki_clone_operation_get` | Проверить асинхронное клонирование | `GET /v1/operations/clone/{task_id}` | R |
 | `wiki_page_create` | Создать страницу | `POST /v1/pages` | W |
 | `wiki_page_update` | Изменить заголовок, содержимое или поля | `POST /v1/pages/{id}` | W |
 | `wiki_page_delete` | Удалить страницу | `DELETE /v1/pages/{id}` | W |
 | `wiki_page_recover` | Восстановить страницу по токену | `POST /v1/recovery_tokens/{token}/recover` | W |
-| `wiki_page_clone` | Клонировать страницу | `POST /v1/pages/{id}/clone` | W |
+| `wiki_page_clone` | Запустить клонирование в `target` | `POST /v1/pages/{id}/clone` | W |
 | `wiki_page_append_content` | Дописать Markdown-содержимое | `POST /v1/pages/{id}/append-content` | W |
 
 ### Комментарии и вложения
@@ -45,7 +51,9 @@
 | Инструмент | Действие | Метод и endpoint | Тип |
 |---|---|---|---|
 | `wiki_page_comments_list` | Получить комментарии страницы | `GET /v1/pages/{id}/comments` | R |
+| `wiki_page_comment_thread` | Получить ветку комментария | `GET /v1/pages/{id}/comments/{comment_id}/thread` | R |
 | `wiki_page_comment_add` | Добавить комментарий или ответ | `POST /v1/pages/{id}/comments` | W |
+| `wiki_page_comment_delete` | Удалить комментарий | `DELETE /v1/pages/{id}/comments/{comment_id}` | W |
 | `wiki_page_attachments_list` | Получить вложения страницы | `GET /v1/pages/{id}/attachments` | R |
 | `wiki_page_attachment_upload` | Загрузить локальный файл и прикрепить к странице | `POST /v1/upload_sessions` -> `PUT /v1/upload_sessions/{id}/upload_part` -> `POST /v1/upload_sessions/{id}/finish` -> `POST /v1/pages/{id}/attachments` | W |
 | `wiki_page_attachment_attach` | Прикрепить завершённые сессии загрузки | `POST /v1/pages/{id}/attachments` | W |
@@ -81,7 +89,7 @@
 
 ## Загрузка вложений
 
-`wiki_page_attachment_upload` читает файл по локальному пути, доступному серверу, создаёт сессию загрузки, отправляет файл частями до 5 МБ, завершает сессию и прикрепляет её к странице. Для Docker-запуска файл должен находиться в подключённом томе или другом пути, доступном контейнеру.
+`wiki_page_attachment_upload` читает файл по локальному пути, доступному серверу, создаёт сессию с полями `file_name`/`file_size`, отправляет файл частями по 5 МБ, завершает сессию и прикрепляет её к странице. Для Docker-запуска файл должен находиться в подключённом томе или другом пути, доступном контейнеру.
 
 ## Режим только для чтения
 

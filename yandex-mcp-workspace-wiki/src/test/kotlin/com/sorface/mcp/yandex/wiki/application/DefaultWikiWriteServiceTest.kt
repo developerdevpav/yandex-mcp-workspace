@@ -62,6 +62,18 @@ class DefaultWikiWriteServiceTest {
     }
 
     @Test
+    @DisplayName("Дополнение без места вставки безопасно использует конец страницы")
+    fun `append content defaults to bottom`() {
+        val bodySlot = slot<Any>()
+        every { client.post("/v1/pages/10/append-content", capture(bodySlot), any()) } returns objectMapper.readTree("{}")
+
+        service().appendContent("10", "текст", location = null, anchor = null)
+
+        val body = bodySlot.captured as ObjectNode
+        assertThat(body.path("body").path("location").asText()).isEqualTo("bottom")
+    }
+
+    @Test
     @DisplayName("Одновременный location и anchor приводит к ApiException")
     fun `append content rejects location and anchor together`() {
         assertThatThrownBy { service().appendContent("10", "текст", location = "bottom", anchor = "#heading") }
@@ -76,7 +88,7 @@ class DefaultWikiWriteServiceTest {
         val bodySlot = slot<Any>()
         every { client.post("/v1/pages", capture(bodySlot), any()) } returns objectMapper.readTree("{}")
 
-        service().createPage("Заголовок", "team/page", null, "# Markdown", fields = """{"page_type":"page"}""")
+        service().createPage("Заголовок", "team/page", "# Markdown", fields = """{"page_type":"page"}""")
 
         val body = bodySlot.captured as ObjectNode
         assertThat(body.path("title").asText()).isEqualTo("Заголовок")
@@ -97,15 +109,32 @@ class DefaultWikiWriteServiceTest {
     }
 
     @Test
+    @DisplayName("Клонирование использует target и возвращаемую асинхронную операцию")
+    fun `clone page builds current api body`() {
+        val bodySlot = slot<Any>()
+        every { client.post("/v1/pages/10/clone", capture(bodySlot), any()) } returns objectMapper.readTree("{}")
+
+        service().clonePage("10", "team/page-copy", "Копия", true)
+
+        val body = bodySlot.captured as ObjectNode
+        assertThat(body.path("target").asText()).isEqualTo("team/page-copy")
+        assertThat(body.path("title").asText()).isEqualTo("Копия")
+        assertThat(body.path("subscribe_me").asBoolean()).isTrue()
+        assertThat(body.has("slug")).isFalse()
+        assertThat(body.has("parent_id")).isFalse()
+    }
+
+    @Test
     @DisplayName("Добавление комментария передаёт текст и родителя")
     fun `add comment builds body`() {
         val bodySlot = slot<Any>()
         every { client.post("/v1/pages/10/comments", capture(bodySlot), any()) } returns objectMapper.readTree("{}")
 
-        service().addComment("10", "текст", parentId = "5")
+        service().addComment("10", "текст", parentId = "5", threadId = null, inlineText = null)
 
         val body = bodySlot.captured as ObjectNode
-        assertThat(body.path("content").asText()).isEqualTo("текст")
+        assertThat(body.path("body").asText()).isEqualTo("текст")
+        assertThat(body.has("content")).isFalse()
         assertThat(body.path("parent_id").asText()).isEqualTo("5")
     }
 
@@ -134,7 +163,10 @@ class DefaultWikiWriteServiceTest {
         val file = dir.resolve("doc.txt")
         Files.write(file, ByteArray(5 * 1024 * 1024 + 10) { 1 })
 
-        every { client.post("/v1/upload_sessions", any(), any()) } returns objectMapper.readTree("""{"id":"sess-1"}""")
+        val sessionBodySlot = slot<Any>()
+        every {
+            client.post("/v1/upload_sessions", capture(sessionBodySlot), any())
+        } returns objectMapper.readTree("""{"session_id":"sess-1"}""")
         every { client.putBinary(any(), any(), any()) } returns objectMapper.readTree("{}")
         every { client.postEmpty("/v1/upload_sessions/sess-1/finish", any()) } returns objectMapper.readTree("{}")
         every { client.post("/v1/pages/10/attachments", any(), any()) } returns objectMapper.readTree("""{"ok":true}""")
@@ -144,6 +176,12 @@ class DefaultWikiWriteServiceTest {
             objectMapper.readTree("{}")
 
         service().uploadAttachment("10", file.toString(), name = null)
+
+        val sessionBody = sessionBodySlot.captured as ObjectNode
+        assertThat(sessionBody.path("file_name").asText()).isEqualTo("doc.txt")
+        assertThat(sessionBody.path("file_size").asLong()).isEqualTo(Files.size(file))
+        assertThat(sessionBody.has("name")).isFalse()
+        assertThat(sessionBody.has("size")).isFalse()
 
         // Файл чуть больше 5 МБ — ожидаем две части с номерами 1 и 2.
         assertThat(partSlot.map { it["part_number"] }).containsExactly("1", "2")

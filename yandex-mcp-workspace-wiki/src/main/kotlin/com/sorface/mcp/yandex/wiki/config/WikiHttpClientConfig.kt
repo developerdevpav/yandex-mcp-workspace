@@ -5,6 +5,7 @@ import com.sorface.mcp.yandex.common.YandexApiAuthInterceptor
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.client.RestClient
+import org.springframework.http.client.ClientHttpRequestFactory
 
 /**
  * HTTP-клиент для API Yandex Wiki.
@@ -25,9 +26,11 @@ class WikiHttpClientConfig {
         properties: WikiApiProperties,
         authInterceptor: YandexApiAuthInterceptor,
         retryInterceptor: RetryingHttpRequestInterceptor,
+        yandexClientHttpRequestFactory: ClientHttpRequestFactory,
     ): RestClient =
         RestClient.builder()
             .baseUrl(properties.baseUrl)
+            .requestFactory(yandexClientHttpRequestFactory)
             .requestInterceptor(authInterceptor)
             .requestInterceptor(retryInterceptor)
             .build()

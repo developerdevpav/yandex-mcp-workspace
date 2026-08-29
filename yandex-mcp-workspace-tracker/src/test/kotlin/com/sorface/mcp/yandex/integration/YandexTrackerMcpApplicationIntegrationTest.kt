@@ -80,7 +80,15 @@ class YandexTrackerMcpApplicationIntegrationTest {
         val response = mockMvc.get("/integration/tools").andReturn().response.contentAsString
         val tools = objectMapper.readValue(response, List::class.java).map { it as String }
 
-        assertThat(tools).contains("system_ping", "yandex_auth_status", "tracker_myself", "tracker_issue_create")
+        assertThat(tools).contains(
+            "system_ping",
+            "yandex_auth_status",
+            "yandex_auth_start",
+            "yandex_auth_poll",
+            "yandex_auth_logout",
+            "tracker_myself",
+            "tracker_issue_create",
+        )
         assertThat(tools).noneMatch { it.startsWith("wiki_") }
     }
 }

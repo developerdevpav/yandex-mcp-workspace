@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:${YANDEX_CONFIG_PATH:${user.home}/.config/yandex-mcp/config.properties}
   application:
     name: yandex-mcp-workspace-wiki
   main:
@@ -36,8 +38,10 @@ yandex:
   client-secret: ${YANDEX_CLIENT_SECRET:}
   org-id: ${YANDEX_ORG_ID:}
   org-type: ${YANDEX_ORG_TYPE:YANDEX_360}
-  token-store-path: ${YANDEX_TOKEN_STORE_PATH:/data/tokens.json}
   read-only: ${YANDEX_READ_ONLY:false}
+  http:
+    connect-timeout: ${YANDEX_HTTP_CONNECT_TIMEOUT:5s}
+    read-timeout: ${YANDEX_HTTP_READ_TIMEOUT:30s}
   retry:
     enabled: ${YANDEX_RETRY_ENABLED:true}
     max-attempts: ${YANDEX_RETRY_MAX_ATTEMPTS:3}
