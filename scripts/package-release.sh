@@ -49,47 +49,62 @@ work_dir="$(mktemp -d)"
 smoke_dir="$(mktemp -d)"
 trap 'rm -rf "$work_dir" "$smoke_dir"' EXIT
 
-input_dir="$work_dir/input"
-image_dir="$work_dir/image"
-bundle_name="yandex-mcp-workspace-${version}-${classifier}"
-bundle_dir="$work_dir/$bundle_name"
+package_component() {
+  local component="$1"
+  local source_jar="$2"
+  local description="$3"
+  local app_name="yandex-mcp-$component"
+  local bundle_name="${app_name}-${version}-${classifier}"
+  local bundle_dir="$work_dir/$bundle_name"
+  local input_dir="$work_dir/input-$component"
+  local image_dir="$work_dir/image-$component"
+  local launcher
+  local icon_path="packaging/icons/$host_os/$app_name"
 
-mkdir -p "$input_dir" "$image_dir" "$bundle_dir"
-cp "$tracker_jar" "$input_dir/yandex-mcp-tracker.jar"
-cp "$wiki_jar" "$input_dir/yandex-mcp-wiki.jar"
+  if [[ "$host_os" == "macos" ]]; then
+    icon_path="$icon_path.icns"
+  else
+    icon_path="$icon_path.png"
+  fi
+  if [[ ! -f "$icon_path" ]]; then
+    echo "Application icon not found: $icon_path" >&2
+    exit 2
+  fi
 
-jpackage \
-  --type app-image \
-  --name yandex-mcp-tracker \
-  --dest "$image_dir" \
-  --input "$input_dir" \
-  --main-jar yandex-mcp-tracker.jar \
-  --main-class org.springframework.boot.loader.launch.JarLauncher \
-  --add-launcher yandex-mcp-wiki=packaging/jpackage/wiki.properties \
-  --vendor Sorface \
-  --description "Yandex Tracker and Wiki MCP servers"
+  mkdir -p "$input_dir" "$image_dir" "$bundle_dir"
+  cp "$source_jar" "$input_dir/$app_name.jar"
 
-if [[ "$(uname -s)" == "Darwin" ]]; then
-  mkdir -p "$bundle_dir/app"
-  mv "$image_dir/yandex-mcp-tracker.app" "$bundle_dir/app/"
-  tracker_launcher="$bundle_dir/app/yandex-mcp-tracker.app/Contents/MacOS/yandex-mcp-tracker"
-  wiki_launcher="$bundle_dir/app/yandex-mcp-tracker.app/Contents/MacOS/yandex-mcp-wiki"
-else
-  mv "$image_dir/yandex-mcp-tracker" "$bundle_dir/app"
-  tracker_launcher="$bundle_dir/app/bin/yandex-mcp-tracker"
-  wiki_launcher="$bundle_dir/app/bin/yandex-mcp-wiki"
-fi
+  jpackage \
+    --type app-image \
+    --name "$app_name" \
+    --dest "$image_dir" \
+    --input "$input_dir" \
+    --main-jar "$app_name.jar" \
+    --main-class org.springframework.boot.loader.launch.JarLauncher \
+    --icon "$icon_path" \
+    --vendor Sorface \
+    --description "$description"
 
-cp packaging/release/README.txt "$bundle_dir/README.txt"
-echo "$version" > "$bundle_dir/VERSION"
+  if [[ "$host_os" == "macos" ]]; then
+    mv "$image_dir/$app_name.app" "$bundle_dir/"
+    launcher="$bundle_dir/$app_name.app/Contents/MacOS/$app_name"
+  else
+    mv "$image_dir/$app_name" "$bundle_dir/app"
+    launcher="$bundle_dir/app/bin/$app_name"
+  fi
 
-YANDEX_CONFIG_PATH="$smoke_dir/config.properties" \
-YANDEX_TOKEN_STORE_PATH="$smoke_dir/tokens.json" \
-  "$tracker_launcher" doctor --logging.level.root=ERROR
-YANDEX_CONFIG_PATH="$smoke_dir/config.properties" \
-YANDEX_TOKEN_STORE_PATH="$smoke_dir/tokens.json" \
-  "$wiki_launcher" doctor --logging.level.root=ERROR
+  cp "packaging/release/$component-README.txt" "$bundle_dir/README.txt"
+  echo "$version" > "$bundle_dir/VERSION"
+  echo "$component" > "$bundle_dir/COMPONENT"
 
-mkdir -p "$output_dir"
-tar -C "$work_dir" -czf "$output_dir/$bundle_name.tar.gz" "$bundle_name"
-echo "Created $output_dir/$bundle_name.tar.gz"
+  YANDEX_CONFIG_PATH="$smoke_dir/config.properties" \
+  YANDEX_TOKEN_STORE_PATH="$smoke_dir/tokens.json" \
+    "$launcher" doctor --logging.level.root=ERROR
+
+  mkdir -p "$output_dir"
+  tar -C "$work_dir" -czf "$output_dir/$bundle_name.tar.gz" "$bundle_name"
+  echo "Created $output_dir/$bundle_name.tar.gz"
+}
+
+package_component "tracker" "$tracker_jar" "Yandex Tracker MCP server"
+package_component "wiki" "$wiki_jar" "Yandex Wiki MCP server"

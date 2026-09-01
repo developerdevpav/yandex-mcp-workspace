@@ -60,11 +60,13 @@ docker build --build-arg MCP_MODULE=yandex-mcp-workspace-wiki -t yandex-mcp-work
 - **CI** (`.github/workflows/ci.yml`) — `mvn test` на push/PR в `main`/`master`.
 - **Release** (`.github/workflows/release.yml`) — по SemVer-тегу `v*` или через ручной запуск:
   - полный `mvn verify` и установка версии тега в Maven-модули на время CI;
-  - переносимые пакеты со встроенной Java для Linux x64/ARM64, macOS Intel/Apple Silicon и Windows x64;
+  - отдельные переносимые пакеты Tracker и Wiki со встроенной Java для Linux x64/ARM64, macOS Intel/Apple Silicon и Windows x64;
   - параллельная публикация образов `ghcr.io/<owner>/<repo>-tracker` и `ghcr.io/<owner>/<repo>-wiki` из `Dockerfile.runtime` для `linux/amd64` и `linux/arm64`;
   - GitHub Release с пакетами, JAR, SHA-256 и provenance attestations.
 
 Подробно процесс описан в [releases.md](./releases.md).
+
+Иконки Tracker и Wiki хранятся раздельно в `packaging/icons`. SVG-источники преобразуются в `.icns`, `.ico` и PNG командой `scripts/generate-icons.sh` на macOS.
 
 При репозитории `developerdevpav/yandex-mcp-workspace` образы:
 

@@ -17,21 +17,28 @@ Yandex MCP Workspace работает по локальному транспор
 
 ## Подготовка
 
-Скачайте и распакуйте [пакет своей ОС](./setup.md#рекомендуемый-вариант-готовый-пакет). Сначала один раз выполните `setup` через Tracker. Например, в Linux:
+Скачайте и распакуйте [отдельный пакет нужного сервера](./setup.md#выбор-сервера). Можно установить только Tracker, только Wiki или оба сервера. Выполните `setup` в любом установленном сервере; OAuth-профиль будет общим. Например, в Linux для Tracker:
 
 ```bash
-/absolute/path/yandex-mcp-workspace/app/bin/yandex-mcp-tracker setup
+/absolute/path/yandex-mcp-tracker/app/bin/yandex-mcp-tracker setup
 ```
 
 Мастер сохранит настройки и токены локально. Поэтому `client_secret`, OAuth-токен и переменные окружения не нужно помещать в конфигурацию AI-клиента.
 
-В примерах замените `/absolute/path/to/yandex-mcp-*` на абсолютные пути к распакованным исполняемым файлам из таблицы в [setup.md](./setup.md#рекомендуемый-вариант-готовый-пакет).
+В примерах замените `/absolute/path/to/yandex-mcp-*` на абсолютные пути к исполняемым файлам из таблицы в [setup.md](./setup.md#скачивание). На macOS после переноса приложений в `~/Applications` используйте:
+
+```text
+/Users/USERNAME/Applications/yandex-mcp-tracker.app/Contents/MacOS/yandex-mcp-tracker
+/Users/USERNAME/Applications/yandex-mcp-wiki.app/Contents/MacOS/yandex-mcp-wiki
+```
+
+Добавляйте в конфигурацию только установленные серверы. Если нужен только Tracker, секция Wiki не требуется, и наоборот.
 
 ## Claude
 
 ### Claude Code — рекомендуемый способ
 
-Добавить оба сервера для текущего пользователя:
+Добавить нужные серверы для текущего пользователя. Выполните одну команду для одного сервера или обе команды, если установлены оба:
 
 ```bash
 claude mcp add --scope user --transport stdio yandex-tracker -- \
@@ -89,7 +96,7 @@ ChatGPT Desktop, Codex CLI и IDE extension используют MCP-конфи�
 1. Откройте **Settings → MCP servers → Add server**.
 2. Выберите транспорт **STDIO**.
 3. Для Tracker задайте абсолютный путь к исполняемому файлу как команду; аргументы не нужны.
-4. Повторите для Wiki.
+4. Если установлен Wiki, добавьте его отдельным сервером с путём к `yandex-mcp-wiki`.
 5. Сохраните и выберите **Restart**.
 
 В composer команда `/mcp` показывает подключённые серверы.
@@ -105,6 +112,8 @@ codex mcp add yandex-wiki -- \
 
 codex mcp list
 ```
+
+Если установлен только один пакет, выполните только соответствующую команду `codex mcp add`.
 
 ### Через `config.toml`
 
@@ -161,11 +170,11 @@ cursor-agent mcp list-tools yandex-tracker
 
 ```json
 {
-  "command": "C:\\Tools\\yandex-mcp\\app\\yandex-mcp-tracker\\yandex-mcp-tracker.exe"
+      "command": "C:\\Tools\\yandex-mcp-tracker\\app\\yandex-mcp-tracker.exe"
 }
 ```
 
-В TOML можно использовать пути с прямыми слэшами: `C:/Tools/yandex-mcp/app/yandex-mcp-tracker/yandex-mcp-tracker.exe`.
+В TOML можно использовать пути с прямыми слэшами: `C:/Tools/yandex-mcp-tracker/app/yandex-mcp-tracker.exe`.
 
 ## Запуск отдельного JAR
 

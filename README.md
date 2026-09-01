@@ -6,7 +6,7 @@
 
 ## Требования
 
-- готовый архив из [GitHub Releases](https://github.com/developerdevpav/yandex-mcp-workspace/releases/latest) — Java уже включена
+- отдельный архив Tracker или Wiki из [GitHub Releases](https://github.com/developerdevpav/yandex-mcp-workspace/releases/latest) — Java уже включена
 - либо JRE 21 для запуска отдельного JAR
 - либо Docker как опциональный серверный вариант
 - Приложение [Яндекс OAuth](https://oauth.yandex.ru/) (`client_id`, `client_secret`)
@@ -19,7 +19,7 @@
 
 ## Авторизация
 
-Docker и установленная Java не обязательны. Скачайте архив своей ОС из GitHub Release, распакуйте и выполните `setup` один раз. Например, в Linux:
+Docker и установленная Java не обязательны. Tracker и Wiki распространяются отдельно: скачайте только нужный сервер либо оба архива. После распаковки выполните `setup` в любом установленном сервере. Например, в Linux для Tracker:
 
 ```bash
 ./app/bin/yandex-mcp-tracker setup

@@ -139,7 +139,7 @@ jobs:
           name: release-jars
           path: dist/release-jars
 
-      - name: Build Unix portable package
+      - name: Build separate Unix packages
         if: runner.os != 'Windows'
         shell: bash
         env:
@@ -153,7 +153,7 @@ jobs:
             dist/release-jars/input/yandex-mcp-wiki.jar \
             dist/native
 
-      - name: Build Windows portable package
+      - name: Build separate Windows packages
         if: runner.os == 'Windows'
         shell: pwsh
         env:
@@ -167,12 +167,25 @@ jobs:
             -WikiJar dist/release-jars/input/yandex-mcp-wiki.jar `
             -OutputDir dist/native
 
-      - name: Attest portable package
+      - name: Verify separate Tracker and Wiki packages
+        shell: bash
+        env:
+          RELEASE_VERSION: ${{ needs.build.outputs.version }}
+          CLASSIFIER: ${{ matrix.classifier }}
+        run: |
+          extension="tar.gz"
+          if [[ "${RUNNER_OS}" == "Windows" ]]; then
+            extension="zip"
+          fi
+          test -f "dist/native/yandex-mcp-tracker-${RELEASE_VERSION}-${CLASSIFIER}.${extension}"
+          test -f "dist/native/yandex-mcp-wiki-${RELEASE_VERSION}-${CLASSIFIER}.${extension}"
+
+      - name: Attest portable packages
         uses: actions/attest@v4
         with:
           subject-path: dist/native/*
 
-      - name: Upload portable package
+      - name: Upload portable packages
         uses: actions/upload-artifact@v4
         with:
           name: native-${{ matrix.classifier }}

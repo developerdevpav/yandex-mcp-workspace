@@ -28,59 +28,76 @@ if (-not (Get-Command jpackage -ErrorAction SilentlyContinue)) {
 
 $WorkDir = Join-Path ([System.IO.Path]::GetTempPath()) ("yandex-mcp-release-" + [guid]::NewGuid())
 $SmokeDir = Join-Path ([System.IO.Path]::GetTempPath()) ("yandex-mcp-smoke-" + [guid]::NewGuid())
-$InputDir = Join-Path $WorkDir "input"
-$ImageDir = Join-Path $WorkDir "image"
-$BundleName = "yandex-mcp-workspace-$Version-$Classifier"
-$BundleDir = Join-Path $WorkDir $BundleName
 
-try {
-    New-Item -ItemType Directory -Force -Path $InputDir, $ImageDir, $BundleDir, $SmokeDir | Out-Null
-    Copy-Item -LiteralPath $TrackerJar -Destination (Join-Path $InputDir "yandex-mcp-tracker.jar")
-    Copy-Item -LiteralPath $WikiJar -Destination (Join-Path $InputDir "yandex-mcp-wiki.jar")
+function New-PortablePackage {
+    param(
+        [Parameter(Mandatory = $true)][string]$Component,
+        [Parameter(Mandatory = $true)][string]$SourceJar,
+        [Parameter(Mandatory = $true)][string]$Description
+    )
+
+    $AppName = "yandex-mcp-$Component"
+    $BundleName = "$AppName-$Version-$Classifier"
+    $BundleDir = Join-Path $WorkDir $BundleName
+    $InputDir = Join-Path $WorkDir "input-$Component"
+    $ImageDir = Join-Path $WorkDir "image-$Component"
+    $IconPath = "packaging/icons/windows/$AppName.ico"
+
+    if (-not (Test-Path -LiteralPath $IconPath -PathType Leaf)) {
+        throw "Application icon not found: $IconPath"
+    }
+
+    New-Item -ItemType Directory -Force -Path $InputDir, $ImageDir, $BundleDir | Out-Null
+    Copy-Item -LiteralPath $SourceJar -Destination (Join-Path $InputDir "$AppName.jar")
 
     & jpackage `
         --type app-image `
-        --name yandex-mcp-tracker `
+        --name $AppName `
         --dest $ImageDir `
         --input $InputDir `
-        --main-jar yandex-mcp-tracker.jar `
+        --main-jar "$AppName.jar" `
         --main-class org.springframework.boot.loader.launch.JarLauncher `
-        --add-launcher "yandex-mcp-wiki=packaging/jpackage/wiki.properties" `
+        --icon $IconPath `
         --win-console `
         --vendor Sorface `
-        --description "Yandex Tracker and Wiki MCP servers"
+        --description $Description
     if ($LASTEXITCODE -ne 0) {
-        throw "jpackage failed with exit code $LASTEXITCODE"
+        throw "jpackage failed for $Component with exit code $LASTEXITCODE"
     }
 
-    $AppContainer = Join-Path $BundleDir "app"
-    New-Item -ItemType Directory -Force -Path $AppContainer | Out-Null
-    Move-Item -LiteralPath (Join-Path $ImageDir "yandex-mcp-tracker") -Destination $AppContainer
-    Copy-Item -LiteralPath "packaging/release/README.txt" -Destination (Join-Path $BundleDir "README.txt")
+    Move-Item -LiteralPath (Join-Path $ImageDir $AppName) -Destination (Join-Path $BundleDir "app")
+    Copy-Item -LiteralPath "packaging/release/$Component-README.txt" -Destination (Join-Path $BundleDir "README.txt")
     Set-Content -LiteralPath (Join-Path $BundleDir "VERSION") -Value $Version -Encoding ascii
+    Set-Content -LiteralPath (Join-Path $BundleDir "COMPONENT") -Value $Component -Encoding ascii
 
-    $TrackerLauncher = Join-Path $AppContainer "yandex-mcp-tracker\yandex-mcp-tracker.exe"
-    $WikiLauncher = Join-Path $AppContainer "yandex-mcp-tracker\yandex-mcp-wiki.exe"
-    $PreviousConfigPath = $env:YANDEX_CONFIG_PATH
-    $PreviousTokenPath = $env:YANDEX_TOKEN_STORE_PATH
-    $env:YANDEX_CONFIG_PATH = Join-Path $SmokeDir "config.properties"
-    $env:YANDEX_TOKEN_STORE_PATH = Join-Path $SmokeDir "tokens.json"
-
-    try {
-        & $TrackerLauncher doctor --logging.level.root=ERROR
-        if ($LASTEXITCODE -ne 0) { throw "Tracker smoke test failed" }
-        & $WikiLauncher doctor --logging.level.root=ERROR
-        if ($LASTEXITCODE -ne 0) { throw "Wiki smoke test failed" }
-    }
-    finally {
-        $env:YANDEX_CONFIG_PATH = $PreviousConfigPath
-        $env:YANDEX_TOKEN_STORE_PATH = $PreviousTokenPath
+    $Launcher = Join-Path $BundleDir "app\$AppName.exe"
+    & $Launcher doctor --logging.level.root=ERROR
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Component smoke test failed"
     }
 
     New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
     $Archive = Join-Path $OutputDir "$BundleName.zip"
     Compress-Archive -Path $BundleDir -DestinationPath $Archive -CompressionLevel Optimal
     Write-Output "Created $Archive"
+}
+
+try {
+    New-Item -ItemType Directory -Force -Path $WorkDir, $SmokeDir | Out-Null
+
+    $PreviousConfigPath = $env:YANDEX_CONFIG_PATH
+    $PreviousTokenPath = $env:YANDEX_TOKEN_STORE_PATH
+    $env:YANDEX_CONFIG_PATH = Join-Path $SmokeDir "config.properties"
+    $env:YANDEX_TOKEN_STORE_PATH = Join-Path $SmokeDir "tokens.json"
+
+    try {
+        New-PortablePackage -Component "tracker" -SourceJar $TrackerJar -Description "Yandex Tracker MCP server"
+        New-PortablePackage -Component "wiki" -SourceJar $WikiJar -Description "Yandex Wiki MCP server"
+    }
+    finally {
+        $env:YANDEX_CONFIG_PATH = $PreviousConfigPath
+        $env:YANDEX_TOKEN_STORE_PATH = $PreviousTokenPath
+    }
 }
 finally {
     Remove-Item -LiteralPath $WorkDir, $SmokeDir -Recurse -Force -ErrorAction SilentlyContinue

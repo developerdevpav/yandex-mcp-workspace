@@ -6,7 +6,7 @@
 
 | Канал | Для кого | Содержимое |
 |---|---|---|
-| GitHub Releases | конечные пользователи | переносимые пакеты для ОС, JAR и `SHA256SUMS` |
+| GitHub Releases | конечные пользователи | отдельные пакеты Tracker/Wiki для ОС, JAR и `SHA256SUMS` |
 | GitHub Container Registry (`ghcr.io`) | Docker/серверный запуск | Tracker и Wiki multi-arch образы |
 | GitHub Actions artifacts | разработчики и диагностика CI | промежуточные результаты workflow |
 
@@ -30,12 +30,13 @@ Workflow также поддерживает ручной запуск `workflow
 1. Проверяет формат версии.
 2. Выполняет полный `mvn verify`.
 3. Собирает JAR с версией релиза для Tracker и Wiki.
-4. На виртуальных машинах GitHub создаёт `app-image` с собственной Java Runtime.
-5. Запускает `doctor` для обоих исполняемых файлов до упаковки.
-6. Формирует архивы Linux x64/ARM64, macOS Intel/Apple Silicon и Windows x64.
-7. Публикует multi-arch Docker-образы в GHCR.
-8. Генерирует `SHA256SUMS` и build provenance attestations.
-9. Создаёт GitHub Release с автоматически сформированными release notes.
+4. На виртуальных машинах GitHub отдельно создаёт `app-image` Tracker и Wiki с собственной Java Runtime.
+5. Добавляет общую монограмму `YW` (Yandex Workspace) и различающий бейдж: галочку для Tracker, страницу для Wiki.
+6. Запускает `doctor` для каждого исполняемого файла до упаковки.
+7. Формирует два независимых архива для каждой платформы: Tracker и Wiki. Один релиз содержит десять переносимых архивов для Linux x64/ARM64, macOS Intel/Apple Silicon и Windows x64.
+8. Публикует multi-arch Docker-образы в GHCR.
+9. Генерирует `SHA256SUMS` и build provenance attestations.
+10. Создаёт GitHub Release с автоматически сформированными release notes.
 
 ## Локальная проверка упаковки
 
@@ -52,6 +53,15 @@ scripts/package-release.sh \
 
 На Windows используйте `scripts/package-release.ps1` с параметрами `Version`, `Classifier`, `TrackerJar`, `WikiJar` и `OutputDir`.
 
+Исходники иконок находятся в `packaging/icons/src`. На macOS производные `.icns`, `.ico` и PNG можно пересоздать командой `scripts/generate-icons.sh`.
+
+Оба скрипта создают два файла, например:
+
+```text
+yandex-mcp-tracker-1.1.0-macos-arm64.tar.gz
+yandex-mcp-wiki-1.1.0-macos-arm64.tar.gz
+```
+
 ## Проверка скачанного файла
 
 SHA-256:
@@ -67,7 +77,7 @@ grep "<имя-архива>" SHA256SUMS | shasum -a 256 -c -
 GitHub attestation:
 
 ```bash
-gh attestation verify yandex-mcp-workspace-<version>-<os>-<arch>.<archive> \
+gh attestation verify yandex-mcp-<tracker|wiki>-<version>-<os>-<arch>.<archive> \
   -R developerdevpav/yandex-mcp-workspace
 ```
 
