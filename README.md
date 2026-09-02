@@ -45,7 +45,7 @@ java -jar yandex-mcp-workspace-tracker.jar setup
 
 | Сервер | Модуль | Инструментов | Префиксы |
 |---|---|---:|---|
-| Tracker | `yandex-mcp-workspace-tracker` | 42 | `tracker_*`, `system_*`, `yandex_auth_*` |
+| Tracker | `yandex-mcp-workspace-tracker` | 84 | `tracker_*`, `system_*`, `yandex_auth_*` |
 | Wiki | `yandex-mcp-workspace-wiki` | 39 | `wiki_*`, `system_*`, `yandex_auth_*` |
 
 В каждом сервере **6 общих** инструментов (служебные + auth) и **доменные** инструменты своего API.
@@ -82,9 +82,9 @@ java -jar yandex-mcp-workspace-tracker.jar setup
 
 ---
 
-### Tracker — 42 инструмента
+### Tracker — 84 инструмента
 
-36 доменных + 6 общих. Префикс доменных: `tracker_*`.
+78 доменных + 6 общих. Префикс доменных: `tracker_*`.
 
 #### Справочники и пользователь
 
@@ -144,6 +144,15 @@ java -jar yandex-mcp-workspace-tracker.jar setup
 | `tracker_link_create` | W | Создание связи между задачами |
 | `tracker_link_delete` | W | Удаление связи |
 
+#### Связи с внешними приложениями
+
+| Инструмент | Тип | Описание |
+|---|---|---|
+| `tracker_external_application_list` | R | Зарегистрированные внешние приложения и точный `origin` |
+| `tracker_external_link_list` | R | Внешние связи задачи для проверки дубликатов |
+| `tracker_external_link_create` | W | Создание внешней связи (`backlink=true` по умолчанию) |
+| `tracker_external_link_delete` | W | Удаление внешней связи |
+
 #### Чек-лист
 
 | Инструмент | Тип | Описание |
@@ -161,6 +170,21 @@ java -jar yandex-mcp-workspace-tracker.jar setup
 | `tracker_worklog_add` | W | Добавление записи (обязательные start и duration в ISO 8601) |
 | `tracker_worklog_update` | W | Изменение записи по id |
 | `tracker_worklog_delete` | W | Удаление записи по id |
+
+#### Проекты, портфели и цели (Entities API)
+
+| Группа | R | W |
+|---|---|---|
+| Основные операции | `tracker_entity_get`, `tracker_entity_search`, `tracker_entity_event_list`, `tracker_bulk_operation_get`, `tracker_bulk_operation_error_list` | `tracker_entity_create`, `tracker_entity_update`, `tracker_entity_delete`, `tracker_entity_bulk_update` |
+| Комментарии | `tracker_entity_comment_list`, `tracker_entity_comment_get` | `tracker_entity_comment_add`, `tracker_entity_comment_update`, `tracker_entity_comment_delete` |
+| Чек-листы project/portfolio | `tracker_entity_checklist_list` | `tracker_entity_checklist_add`, `tracker_entity_checklist_replace`, `tracker_entity_checklist_item_update`, `tracker_entity_checklist_item_move`, `tracker_entity_checklist_item_delete`, `tracker_entity_checklist_clear` |
+| Вложения | `tracker_entity_attachment_list`, `tracker_entity_attachment_get` | `tracker_temporary_attachment_upload`, `tracker_entity_attachment_attach`, `tracker_entity_attachment_delete` |
+| Связи и ACL | `tracker_entity_link_list`, `tracker_entity_access_get` | `tracker_entity_link_create`, `tracker_entity_link_delete`, `tracker_entity_access_update` |
+| OKR и метрики | `tracker_goal_key_result_list`, `tracker_entity_metric_list` | `tracker_goal_key_result_add`, `tracker_goal_key_result_update`, `tracker_goal_key_result_delete`, `tracker_entity_metric_replace`, `tracker_entity_metric_clear` |
+
+Сложные поля передаются JSON-строками. `entityType` принимает `project`, `portfolio` или `goal`.
+Destructive-операции возвращают структурированное подтверждение, а связи, ACL и прикрепление
+временного файла подтверждаются повторным чтением. Полный контракт: [docs/capabilities/yandex-tracker-entities-api-contracts.md](docs/capabilities/yandex-tracker-entities-api-contracts.md).
 
 ---
 

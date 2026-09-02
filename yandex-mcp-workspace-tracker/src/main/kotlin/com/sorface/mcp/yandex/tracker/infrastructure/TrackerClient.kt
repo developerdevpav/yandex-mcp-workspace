@@ -5,13 +5,16 @@ import com.fasterxml.jackson.databind.node.NullNode
 import com.sorface.mcp.yandex.common.ApiErrorTranslator
 import com.sorface.mcp.yandex.common.ApiException
 import com.sorface.mcp.yandex.tracker.domain.PagedResult
+import org.springframework.core.io.FileSystemResource
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
+import org.springframework.util.LinkedMultiValueMap
 import org.springframework.web.client.RestClient
 import org.springframework.web.util.UriBuilder
 import org.springframework.web.util.UriComponentsBuilder
 import java.net.URI
+import java.nio.file.Path
 import java.util.function.Function
 
 /**
@@ -77,6 +80,38 @@ class TrackerClient(
      */
     fun post(path: String, body: Any, query: Map<String, String?> = emptyMap()): JsonNode =
         postPaged(path, body, query).items
+
+    /**
+     * Выполняет `POST`-запрос без тела.
+     *
+     * @param path путь относительно базового адреса API
+     * @param query параметры строки запроса; значения `null` пропускаются
+     * @return тело ответа в виде [JsonNode]
+     */
+    fun postEmpty(path: String, query: Map<String, String?> = emptyMap()): JsonNode =
+        trackerRestClient.post()
+            .uri(uriFunction(path, query))
+            .exchange { _, response -> toPagedResult(response) }!!
+            .items
+
+    /**
+     * Загружает файл multipart-запросом, не считывая его целиком в память.
+     *
+     * @param path путь endpoint загрузки
+     * @param file локальный обычный файл
+     * @param fileName необязательное имя файла в Tracker
+     * @return метаданные временного файла
+     */
+    fun postMultipart(path: String, file: Path, fileName: String?): JsonNode {
+        val parts = LinkedMultiValueMap<String, Any>()
+        parts.add("file", FileSystemResource(file))
+        return trackerRestClient.post()
+            .uri(uriFunction(path, mapOf("filename" to fileName)))
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .body(parts)
+            .exchange { _, response -> toPagedResult(response) }!!
+            .items
+    }
 
     /**
      * Выполняет `PATCH`-запрос с телом в формате JSON и возвращает тело ответа.

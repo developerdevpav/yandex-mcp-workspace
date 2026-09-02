@@ -191,6 +191,13 @@ class TrackerTools(
     ): String = renderPaged(trackerReadService.listComments(key, expand, perPage, id), page = null, perPage = perPage)
 
     @Tool(
+        name = "tracker_external_application_list",
+        description = "Возвращает зарегистрированные внешние приложения Tracker. Используйте точный id " +
+            "нужного приложения как origin для tracker_external_link_create; не угадывайте origin.",
+    )
+    fun externalApplicationList(): String = render(trackerReadService.listExternalApplications())
+
+    @Tool(
         name = "tracker_link_list",
         description = "Возвращает список связей задачи Tracker.",
     )
@@ -198,6 +205,16 @@ class TrackerTools(
         @ToolParam(description = "Ключ задачи, например TREK-42")
         key: String,
     ): String = render(trackerReadService.listLinks(key))
+
+    @Tool(
+        name = "tracker_external_link_list",
+        description = "Возвращает связи задачи с объектами внешних приложений. Проверяйте этот список " +
+            "перед tracker_external_link_create, чтобы не создавать дубликаты.",
+    )
+    fun externalLinkList(
+        @ToolParam(description = "Ключ задачи, например TREK-42")
+        key: String,
+    ): String = render(trackerReadService.listExternalLinks(key))
 
     @Tool(
         name = "tracker_checklist_list",

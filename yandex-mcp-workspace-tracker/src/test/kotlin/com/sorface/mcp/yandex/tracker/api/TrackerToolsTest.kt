@@ -63,4 +63,29 @@ class TrackerToolsTest {
 
         assertThat(result).isEqualTo("42")
     }
+
+    @Test
+    @DisplayName("tracker_external_application_list возвращает список приложений")
+    fun `external application list renders json`() {
+        every { service.listExternalApplications() } returns objectMapper.readTree(
+            """[{"id":"wiki-id","name":"Yandex Wiki"}]""",
+        )
+
+        val result = tools.externalApplicationList()
+
+        assertThat(objectMapper.readTree(result)[0].path("id").asText()).isEqualTo("wiki-id")
+    }
+
+    @Test
+    @DisplayName("tracker_external_link_list возвращает внешние связи задачи")
+    fun `external link list renders json`() {
+        every { service.listExternalLinks("TREK-1") } returns objectMapper.readTree(
+            """[{"id":"51","object":{"key":"wiki-page-key"}}]""",
+        )
+
+        val result = tools.externalLinkList("TREK-1")
+
+        assertThat(objectMapper.readTree(result)[0].path("object").path("key").asText())
+            .isEqualTo("wiki-page-key")
+    }
 }

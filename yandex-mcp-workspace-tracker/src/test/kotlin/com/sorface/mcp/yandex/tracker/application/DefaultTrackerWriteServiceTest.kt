@@ -97,6 +97,38 @@ class DefaultTrackerWriteServiceTest {
     }
 
     @Test
+    @DisplayName("Создание внешней связи формирует тело и параметр backlink")
+    fun `create external link builds body and query`() {
+        val bodySlot = slot<Any>()
+        val querySlot = slot<Map<String, String?>>()
+        every {
+            client.post("/v3/issues/TREK-1/remotelinks", capture(bodySlot), capture(querySlot))
+        } returns objectMapper.readTree("""{"id":"51"}""")
+
+        service().createExternalLink(
+            key = "TREK-1",
+            relationship = "RELATES",
+            objectKey = "wiki-page-key",
+            origin = "wiki-application-id",
+            backlink = true,
+        )
+
+        val body = bodySlot.captured as ObjectNode
+        assertThat(body.path("relationship").asText()).isEqualTo("RELATES")
+        assertThat(body.path("key").asText()).isEqualTo("wiki-page-key")
+        assertThat(body.path("origin").asText()).isEqualTo("wiki-application-id")
+        assertThat(querySlot.captured["backlink"]).isEqualTo("true")
+    }
+
+    @Test
+    @DisplayName("Удаление внешней связи вызывает DELETE для remotelinks")
+    fun `delete external link calls delete`() {
+        service().deleteExternalLink("TREK-1", "51")
+
+        verify { client.delete("/v3/issues/TREK-1/remotelinks/51", any()) }
+    }
+
+    @Test
     @DisplayName("Добавление комментария собирает массив призываемых пользователей")
     fun `add comment builds summonees`() {
         val bodySlot = slot<Any>()

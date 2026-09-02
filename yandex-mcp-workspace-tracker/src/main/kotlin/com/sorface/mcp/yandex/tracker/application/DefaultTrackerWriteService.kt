@@ -117,6 +117,30 @@ class DefaultTrackerWriteService(
         trackerClient.delete("/v3/issues/$key/links/$linkId")
     }
 
+    override fun createExternalLink(
+        key: String,
+        relationship: String,
+        objectKey: String,
+        origin: String,
+        backlink: Boolean,
+    ): JsonNode {
+        writeGuard.ensureWritable("создание внешней связи")
+        val body = objectMapper.createObjectNode()
+            .put("relationship", relationship)
+            .put("key", objectKey)
+            .put("origin", origin)
+        return trackerClient.post(
+            "/v3/issues/$key/remotelinks",
+            body,
+            mapOf("backlink" to backlink.toString()),
+        )
+    }
+
+    override fun deleteExternalLink(key: String, linkId: String) {
+        writeGuard.ensureWritable("удаление внешней связи")
+        trackerClient.delete("/v3/issues/$key/remotelinks/$linkId")
+    }
+
     override fun addChecklistItem(
         key: String,
         text: String,

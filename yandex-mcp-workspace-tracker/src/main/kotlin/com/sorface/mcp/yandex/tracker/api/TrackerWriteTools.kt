@@ -168,6 +168,45 @@ class TrackerWriteTools(
     }
 
     @Tool(
+        name = "tracker_external_link_create",
+        description = "Создаёт связь задачи с объектом внешнего приложения. Перед вызовом обязательно " +
+            "получите точный origin через tracker_external_application_list и проверьте отсутствие " +
+            "дубликата через tracker_external_link_list.",
+    )
+    fun externalLinkCreate(
+        @ToolParam(description = "Ключ задачи Tracker, например TREK-42")
+        key: String,
+        @ToolParam(description = "Тип связи; рекомендуемое Yandex API значение RELATES")
+        relationship: String,
+        @ToolParam(description = "Точный ключ объекта во внешнем приложении, например ключ страницы Wiki")
+        objectKey: String,
+        @ToolParam(description = "Точный id приложения из tracker_external_application_list")
+        origin: String,
+        @ToolParam(
+            required = false,
+            description = "Создать дублирующую связь во внешнем приложении; по умолчанию true",
+        )
+        backlink: Boolean?,
+    ): String = render(
+        trackerWriteService.createExternalLink(key, relationship, objectKey, origin, backlink ?: true),
+    )
+
+    @Tool(
+        name = "tracker_external_link_delete",
+        description = "Удаляет связь задачи с объектом внешнего приложения по id из " +
+            "tracker_external_link_list.",
+    )
+    fun externalLinkDelete(
+        @ToolParam(description = "Ключ задачи Tracker, например TREK-42")
+        key: String,
+        @ToolParam(description = "Идентификатор внешней связи из tracker_external_link_list")
+        linkId: String,
+    ): String {
+        trackerWriteService.deleteExternalLink(key, linkId)
+        return "Внешняя связь $linkId задачи $key удалена."
+    }
+
+    @Tool(
         name = "tracker_checklist_add",
         description = "Добавляет пункт в чек-лист задачи Tracker.",
     )

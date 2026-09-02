@@ -3,6 +3,8 @@ package com.sorface.mcp.yandex.tracker.config
 import com.sorface.mcp.yandex.auth.api.AuthTools
 import com.sorface.mcp.yandex.config.YandexProperties
 import com.sorface.mcp.yandex.system.api.SystemTools
+import com.sorface.mcp.yandex.tracker.api.TrackerEntityTools
+import com.sorface.mcp.yandex.tracker.api.TrackerEntityWriteTools
 import com.sorface.mcp.yandex.tracker.api.TrackerTools
 import com.sorface.mcp.yandex.tracker.api.TrackerWriteTools
 import org.springframework.ai.tool.ToolCallbackProvider
@@ -27,14 +29,18 @@ class TrackerToolsConfiguration {
         systemTools: SystemTools,
         authTools: AuthTools,
         trackerTools: TrackerTools,
+        trackerEntityTools: TrackerEntityTools,
         trackerWriteTools: TrackerWriteTools,
+        trackerEntityWriteTools: TrackerEntityWriteTools,
     ): ToolCallbackProvider {
         val toolObjects = buildList {
             add(systemTools)
             add(authTools)
             add(trackerTools)
+            add(trackerEntityTools)
             if (!properties.readOnly) {
                 add(trackerWriteTools)
+                add(trackerEntityWriteTools)
             }
         }
         return MethodToolCallbackProvider.builder()

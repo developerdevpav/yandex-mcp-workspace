@@ -2,7 +2,7 @@
 
 | Сервер | Модуль | Образ | Инструментов |
 |---|---|---|---|
-| Tracker | `yandex-mcp-workspace-tracker` | `ghcr.io/developerdevpav/yandex-mcp-workspace-tracker:latest` | 42 |
+| Tracker | `yandex-mcp-workspace-tracker` | `ghcr.io/developerdevpav/yandex-mcp-workspace-tracker:latest` | 84 |
 | Wiki | `yandex-mcp-workspace-wiki` | `ghcr.io/developerdevpav/yandex-mcp-workspace-wiki:latest` | 39 |
 
 Обзор workspace и конфигурация — [../overview.md](../overview.md), [../configuration.md](../configuration.md).
@@ -28,11 +28,22 @@
 | Очереди | `tracker_queue_list`, `tracker_queue_get`, `tracker_queue_field_list` |
 | Справочники | `tracker_issuetype_list`, `tracker_priority_list`, `tracker_status_list`, `tracker_resolution_list`, `tracker_field_list`, `tracker_field_get` |
 | Комментарии | `tracker_comment_list`, `tracker_comment_add`, `tracker_comment_update`, `tracker_comment_delete` |
-| Связи | `tracker_link_list`, `tracker_link_create`, `tracker_link_delete` |
+| Связи задач | `tracker_link_list`, `tracker_link_create`, `tracker_link_delete` |
+| Внешние связи | `tracker_external_application_list`, `tracker_external_link_list`, `tracker_external_link_create`, `tracker_external_link_delete` |
 | Чек-лист | `tracker_checklist_list`, `tracker_checklist_add`, `tracker_checklist_update`, `tracker_checklist_delete` |
 | Worklog | `tracker_worklog_list`, `tracker_worklog_add`, `tracker_worklog_update`, `tracker_worklog_delete` |
+| Entities: основные операции | `tracker_entity_get`, `tracker_entity_search`, `tracker_entity_create`, `tracker_entity_update`, `tracker_entity_delete`, `tracker_entity_bulk_update`, `tracker_entity_event_list` |
+| Entities: bulk | `tracker_bulk_operation_get`, `tracker_bulk_operation_error_list` |
+| Entities: комментарии | `tracker_entity_comment_list`, `tracker_entity_comment_get`, `tracker_entity_comment_add`, `tracker_entity_comment_update`, `tracker_entity_comment_delete` |
+| Entities: чек-листы | `tracker_entity_checklist_list`, `tracker_entity_checklist_add`, `tracker_entity_checklist_replace`, `tracker_entity_checklist_item_update`, `tracker_entity_checklist_item_move`, `tracker_entity_checklist_item_delete`, `tracker_entity_checklist_clear` |
+| Entities: вложения | `tracker_temporary_attachment_upload`, `tracker_entity_attachment_list`, `tracker_entity_attachment_get`, `tracker_entity_attachment_attach`, `tracker_entity_attachment_delete` |
+| Entities: связи и ACL | `tracker_entity_link_list`, `tracker_entity_link_create`, `tracker_entity_link_delete`, `tracker_entity_access_get`, `tracker_entity_access_update` |
+| Entities: OKR и метрики | `tracker_goal_key_result_list`, `tracker_goal_key_result_add`, `tracker_goal_key_result_update`, `tracker_goal_key_result_delete`, `tracker_entity_metric_list`, `tracker_entity_metric_replace`, `tracker_entity_metric_clear` |
 
 Подробно: [yandex-tracker-capabilities.md](./yandex-tracker-capabilities.md).
+
+Реализованный HTTP- и MCP-контракт унифицированного API проектов, портфелей и целей:
+[yandex-tracker-entities-api-contracts.md](./yandex-tracker-entities-api-contracts.md).
 
 ## Wiki
 
@@ -51,4 +62,4 @@
 
 ## Не реализовано
 
-Tracker: вложения, доски, спринты, компоненты, версии, массовые операции.
+Tracker: вложения задач, доски, спринты, компоненты, версии и массовые операции над задачами. В Entities API вложения и пакетное изменение реализованы.

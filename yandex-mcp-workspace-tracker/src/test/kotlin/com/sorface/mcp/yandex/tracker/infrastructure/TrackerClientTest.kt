@@ -2,6 +2,7 @@ package com.sorface.mcp.yandex.tracker.infrastructure
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.containing
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.http.client.JdkClientHttpRequestFactory
 import org.springframework.web.client.RestClient
 import java.net.http.HttpClient
+import java.nio.file.Files
 
 @DisplayName("Низкоуровневый клиент Tracker (TrackerClient)")
 class TrackerClientTest {
@@ -141,6 +143,37 @@ class TrackerClientTest {
         val body = client.post("/v3/issues/_count", mapOf("query" to "queue: TREK"))
 
         assertThat(body.asLong()).isEqualTo(7)
+    }
+
+    @Test
+    @DisplayName("Multipart POST передаёт файл и необязательное имя")
+    fun `post multipart streams file`() {
+        val file = Files.createTempFile("tracker-upload", ".txt")
+        Files.writeString(file, "entity attachment")
+        try {
+            server.stubFor(
+                post(urlPathEqualTo("/v3/attachments/"))
+                    .willReturn(
+                        aResponse()
+                            .withStatus(201)
+                            .withHeader("Content-Type", "application/json")
+                            .withBody("""{"id":"30","name":"renamed.txt"}"""),
+                    ),
+            )
+
+            val result = client.postMultipart("/v3/attachments/", file, "renamed.txt")
+
+            assertThat(result.path("id").asText()).isEqualTo("30")
+            server.verify(
+                com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor(
+                    urlPathEqualTo("/v3/attachments/"),
+                )
+                    .withQueryParam("filename", com.github.tomakehurst.wiremock.client.WireMock.equalTo("renamed.txt"))
+                    .withHeader("Content-Type", containing("multipart/form-data")),
+            )
+        } finally {
+            Files.deleteIfExists(file)
+        }
     }
 
     @Test

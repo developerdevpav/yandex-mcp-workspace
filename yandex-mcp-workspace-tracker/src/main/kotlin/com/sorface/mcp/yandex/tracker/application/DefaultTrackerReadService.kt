@@ -112,8 +112,14 @@ class DefaultTrackerReadService(
             ),
         )
 
+    override fun listExternalApplications(): JsonNode =
+        trackerClient.get("/v3/applications")
+
     override fun listLinks(key: String): JsonNode =
         trackerClient.get("/v3/issues/$key/links")
+
+    override fun listExternalLinks(key: String): JsonNode =
+        trackerClient.get("/v3/issues/$key/remotelinks")
 
     override fun listChecklistItems(key: String): JsonNode =
         trackerClient.get("/v3/issues/$key/checklistItems")

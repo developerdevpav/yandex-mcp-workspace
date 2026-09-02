@@ -130,6 +130,32 @@ interface TrackerWriteService {
     fun deleteLink(key: String, linkId: String)
 
     /**
+     * Создаёт связь задачи с объектом внешнего приложения.
+     *
+     * @param key ключ задачи
+     * @param relationship тип связи, рекомендуемое значение `RELATES`
+     * @param objectKey ключ объекта во внешнем приложении
+     * @param origin точный идентификатор внешнего приложения из списка приложений Tracker
+     * @param backlink нужно ли запросить создание дублирующей связи во внешнем приложении
+     * @return созданная внешняя связь
+     */
+    fun createExternalLink(
+        key: String,
+        relationship: String,
+        objectKey: String,
+        origin: String,
+        backlink: Boolean,
+    ): JsonNode
+
+    /**
+     * Удаляет связь задачи с объектом внешнего приложения.
+     *
+     * @param key ключ задачи
+     * @param linkId идентификатор внешней связи
+     */
+    fun deleteExternalLink(key: String, linkId: String)
+
+    /**
      * Добавляет пункт в чек-лист задачи.
      *
      * @param key ключ задачи

@@ -158,12 +158,31 @@ interface TrackerReadService {
     fun listComments(key: String, expand: String?, perPage: Int?, id: String?): PagedResult
 
     /**
+     * Возвращает зарегистрированные внешние приложения, с объектами которых Tracker может
+     * создавать связи.
+     *
+     * Идентификатор `id` нужного приложения из ответа следует использовать как `origin` при
+     * создании внешней связи.
+     *
+     * @return массив внешних приложений
+     */
+    fun listExternalApplications(): JsonNode
+
+    /**
      * Возвращает список связей задачи.
      *
      * @param key ключ задачи
      * @return массив связей
      */
     fun listLinks(key: String): JsonNode
+
+    /**
+     * Возвращает список связей задачи с объектами внешних приложений.
+     *
+     * @param key ключ задачи
+     * @return массив внешних связей
+     */
+    fun listExternalLinks(key: String): JsonNode
 
     /**
      * Возвращает пункты чек-листа задачи.

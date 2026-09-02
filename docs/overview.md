@@ -6,7 +6,7 @@
 
 | Сервер | Maven-модуль | Образ GHCR | Инструменты |
 |---|---|---|---|
-| Tracker | `yandex-mcp-workspace-tracker` | `ghcr.io/developerdevpav/yandex-mcp-workspace-tracker:latest` | 42: `tracker_*`, `system_*`, `yandex_auth_*` |
+| Tracker | `yandex-mcp-workspace-tracker` | `ghcr.io/developerdevpav/yandex-mcp-workspace-tracker:latest` | 84: `tracker_*`, `system_*`, `yandex_auth_*` |
 | Wiki | `yandex-mcp-workspace-wiki` | `ghcr.io/developerdevpav/yandex-mcp-workspace-wiki:latest` | 39: `wiki_*`, `system_*`, `yandex_auth_*` |
 
 Имена образов формируются из имени GitHub-репозитория: `{owner}/{repo}-tracker` и `{owner}/{repo}-wiki` (см. [development.md](./development.md)).
@@ -29,6 +29,7 @@ yandex-mcp-workspace/          # корневой pom (packaging pom)
 ## Возможности
 
 - Задачи, очереди, справочники, комментарии, связи, чек-листы, worklog, пользователи и поля Tracker.
+- Проекты, портфели и цели через унифицированный Entities API: CRUD, поиск, события, bulk, комментарии, чек-листы, вложения, связи, ACL, ключевые результаты и метрики.
 - Страницы, комментарии, вложения и динамические таблицы Wiki (контент страниц — Markdown).
 - `YANDEX_READ_ONLY=true` — изменяющие инструменты скрыты из `tools/list`; запись в таблицы Wiki дополнительно блокируется на уровне сервиса.
 - Автоповтор при сетевых ошибках, `429` и `5xx`.

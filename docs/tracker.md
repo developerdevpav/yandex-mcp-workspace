@@ -15,7 +15,8 @@ MCP-сервер модуля `yandex-mcp-workspace-tracker`. Образ: `ghcr.
 
 Полный список с HTTP endpoint — [capabilities/yandex-tracker-capabilities.md](./capabilities/yandex-tracker-capabilities.md).
 
-Кратко: пользователи и справочники, задачи (поиск, создание, изменение, переходы), очереди, комментарии, связи, чек-листы, worklog.
+Кратко: пользователи и справочники, задачи (поиск, создание, изменение, переходы), очереди,
+комментарии, связи, чек-листы, worklog, а также проекты, портфели и цели через Entities API.
 
 ## Особенности
 
@@ -24,7 +25,10 @@ MCP-сервер модуля `yandex-mcp-workspace-tracker`. Образ: `ghcr.
 - `tracker_issue_create` / `tracker_issue_update` — произвольные поля через JSON `fields`.
 - `tracker_issue_update` принимает `version` для защиты от конфликтов записи.
 - Worklog: длительность в ISO 8601 (например `PT2H30M`).
-- Ответы — JSON API без нормализации полей на стороне MCP.
+- Entities API поддерживает CRUD, поиск, события, bulk, комментарии, чек-листы, вложения,
+  связи, ACL, ключевые результаты и метрики.
+- Ответы сохраняют неизвестные поля API. Поиск Entities и относительная пагинация
+  нормализуются в `items` и единые метаданные страницы.
 
 ## Read-only
 

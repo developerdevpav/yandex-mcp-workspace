@@ -154,6 +154,26 @@ class DefaultTrackerReadServiceTest {
     }
 
     @Test
+    @DisplayName("Список внешних приложений обращается к applications endpoint")
+    fun `list external applications calls endpoint`() {
+        every { client.get("/v3/applications", any()) } returns objectMapper.createArrayNode()
+
+        service.listExternalApplications()
+
+        verify { client.get("/v3/applications", any()) }
+    }
+
+    @Test
+    @DisplayName("Список внешних связей обращается к remotelinks endpoint")
+    fun `list external links calls endpoint`() {
+        every { client.get("/v3/issues/TREK-1/remotelinks", any()) } returns objectMapper.createArrayNode()
+
+        service.listExternalLinks("TREK-1")
+
+        verify { client.get("/v3/issues/TREK-1/remotelinks", any()) }
+    }
+
+    @Test
     @DisplayName("Список worklog обращается к worklog endpoint")
     fun `list worklogs calls endpoint`() {
         every { client.get("/v3/issues/TREK-1/worklog", any()) } returns objectMapper.createArrayNode()

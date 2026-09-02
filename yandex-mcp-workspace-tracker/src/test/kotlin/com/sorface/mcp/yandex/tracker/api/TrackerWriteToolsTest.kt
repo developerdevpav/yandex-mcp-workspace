@@ -49,4 +49,26 @@ class TrackerWriteToolsTest {
 
         assertThat(result).contains("55").contains("удалена")
     }
+
+    @Test
+    @DisplayName("tracker_external_link_create использует backlink=true по умолчанию")
+    fun `external link create defaults backlink to true`() {
+        every {
+            service.createExternalLink("TREK-1", "RELATES", "wiki-page-key", "wiki-id", true)
+        } returns objectMapper.readTree("""{"id":"51"}""")
+
+        val result = tools.externalLinkCreate("TREK-1", "RELATES", "wiki-page-key", "wiki-id", null)
+
+        assertThat(objectMapper.readTree(result).path("id").asText()).isEqualTo("51")
+    }
+
+    @Test
+    @DisplayName("tracker_external_link_delete возвращает подтверждение удаления")
+    fun `external link delete confirms`() {
+        every { service.deleteExternalLink("TREK-1", "51") } just runs
+
+        val result = tools.externalLinkDelete("TREK-1", "51")
+
+        assertThat(result).contains("51").contains("TREK-1").contains("удалена")
+    }
 }
