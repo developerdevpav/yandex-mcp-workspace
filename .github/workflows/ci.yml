@@ -32,7 +32,7 @@ jobs:
         run: mvn -B test
 
       - name: Validate release shell scripts
-        run: bash -n scripts/package-release.sh scripts/generate-icons.sh
+        run: bash -n scripts/package-release.sh scripts/generate-icons.sh scripts/install.sh scripts/test-install.sh
 
   validate-windows-packaging-script:
     runs-on: windows-latest
@@ -55,3 +55,16 @@ jobs:
             $parseErrors | ForEach-Object { Write-Error $_ }
             exit 1
           }
+
+  installer-smoke:
+    name: Installer smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Smoke-test interactive installer
+        run: scripts/test-install.sh

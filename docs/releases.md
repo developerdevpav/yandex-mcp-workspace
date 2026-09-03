@@ -6,7 +6,7 @@
 
 | Канал | Для кого | Содержимое |
 |---|---|---|
-| GitHub Releases | конечные пользователи | отдельные пакеты Tracker/Wiki для ОС, JAR и `SHA256SUMS` |
+| GitHub Releases | конечные пользователи | `install.sh`, отдельные пакеты Tracker/Wiki для ОС, JAR и `SHA256SUMS` |
 | GitHub Container Registry (`ghcr.io`) | Docker/серверный запуск | Tracker и Wiki multi-arch образы |
 | GitHub Actions artifacts | разработчики и диагностика CI | промежуточные результаты workflow |
 
@@ -35,7 +35,7 @@ Workflow также поддерживает ручной запуск `workflow
 6. Запускает `doctor` для каждого исполняемого файла до упаковки.
 7. Формирует два независимых архива для каждой платформы: Tracker и Wiki. Один релиз содержит десять переносимых архивов для Linux x64/ARM64, macOS Intel/Apple Silicon и Windows x64.
 8. Публикует multi-arch Docker-образы в GHCR.
-9. Генерирует `SHA256SUMS` и build provenance attestations.
+9. Добавляет однокомандный установщик `install.sh`, генерирует `SHA256SUMS` и build provenance attestations.
 10. Создаёт GitHub Release с автоматически сформированными release notes.
 
 ## Локальная проверка упаковки

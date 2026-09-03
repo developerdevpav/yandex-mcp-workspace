@@ -8,6 +8,7 @@ set -e
 #   setup/login/auth — интерактивное получение токена по сценарию OAuth 2.0 Device Flow.
 #   logout — удалить локальные токены.
 #   doctor — показать безопасную диагностику авторизации.
+#   connect — подключить MCP к локальным клиентам (для Docker обычно не используется).
 #
 # В режиме serve поток stdout зарезервирован под протокол MCP, поэтому ничего,
 # кроме протокольных сообщений, в stdout не пишется. Диагностика идёт в stderr.
@@ -20,11 +21,11 @@ case "$COMMAND" in
   serve)
     exec java ${JAVA_OPTS} -jar /app/app.jar
     ;;
-  setup|login|auth|logout|doctor)
+  setup|login|auth|logout|doctor|connect)
     exec java ${JAVA_OPTS} -jar /app/app.jar "$COMMAND"
     ;;
   *)
-    echo "Неизвестная команда: $COMMAND. Доступны: serve, setup, login, auth, logout, doctor." >&2
+    echo "Неизвестная команда: $COMMAND. Доступны: serve, setup, login, auth, logout, doctor, connect." >&2
     exit 64
     ;;
 esac

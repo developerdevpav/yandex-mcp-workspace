@@ -25,4 +25,4 @@ fun main(args: Array<String>) {
     builder.run(*normalizedArgs)
 }
 
-private val CLI_COMMANDS = setOf("auth", "login", "setup", "logout", "doctor")
+private val CLI_COMMANDS = setOf("auth", "login", "setup", "logout", "doctor", "connect")

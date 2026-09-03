@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component
  * Команда интерактивного получения токена по сценарию OAuth 2.0 Device Flow.
  *
  * Запускается только в профиле `auth`, который активируют команды `setup`, `login`, `auth`,
- * `logout` и `doctor`. В этом режиме MCP-сервер не стартует. Все сообщения для пользователя
+ * `logout`, `doctor` и `connect`. В этом режиме MCP-сервер не стартует. Все сообщения для пользователя
  * выводятся в stderr, чтобы не мешать протоколу MCP в обычном режиме.
  *
  * Шаги:
@@ -43,9 +43,10 @@ class AuthCommandRunner(
             "auth", "login" -> login()
             "setup" -> setup()
             "logout" -> logout()
-            "doctor" -> doctor()
+            "doctor" -> doctor(args.containsOption("verify-token"))
+            "connect" -> Unit // Команду обрабатывает ClientConnectCommandRunner.
             else -> throw AuthorizationException(
-                "Неизвестная команда. Доступны: setup, login, auth, logout, doctor.",
+                "Неизвестная команда. Доступны: setup, login, auth, logout, doctor, connect.",
             )
         }
     }
@@ -124,7 +125,8 @@ class AuthCommandRunner(
     }
 
     /** Выводит безопасную диагностику конфигурации и токена. */
-    private fun doctor() {
+    private fun doctor(verifyToken: Boolean = false) {
+        if (verifyToken) authService.currentAccessToken()
         val status = authService.status()
         System.err.println("настройки API заданы: ${if (status.configured) "да" else "нет"}")
         System.err.println("авторизован: ${if (status.authorized) "да" else "нет"}")

@@ -4,6 +4,7 @@ import com.sorface.mcp.yandex.auth.application.AuthService
 import com.sorface.mcp.yandex.auth.application.AuthSettingsStore
 import com.sorface.mcp.yandex.auth.application.BrowserLauncher
 import com.sorface.mcp.yandex.auth.domain.DeviceAuthorization
+import com.sorface.mcp.yandex.auth.domain.AuthStatus
 import com.sorface.mcp.yandex.auth.domain.TokenSet
 import com.sorface.mcp.yandex.config.OrgType
 import com.sorface.mcp.yandex.config.YandexProperties
@@ -58,5 +59,29 @@ class AuthCommandRunnerTest {
         assertThat(properties.orgId).isEqualTo("org")
         assertThat(properties.orgType).isEqualTo(OrgType.YANDEX_CLOUD)
         verify { settingsStore.save(properties) }
+    }
+
+    @Test
+    @DisplayName("Doctor с verify-token проверяет и при необходимости обновляет токен")
+    fun `doctor verifies token when requested`() {
+        val properties = YandexProperties()
+        val authService = mockk<AuthService>()
+        val settingsStore = mockk<AuthSettingsStore>()
+        val arguments = mockk<ApplicationArguments>()
+        every { arguments.nonOptionArgs } returns listOf("doctor")
+        every { arguments.containsOption("verify-token") } returns true
+        every { authService.currentAccessToken() } returns "access"
+        every { authService.status() } returns AuthStatus(true, true, Instant.MAX, "X-Org-ID", false)
+        every { settingsStore.path } returns Path.of("config.properties")
+
+        AuthCommandRunner(
+            authService,
+            mockk(relaxed = true),
+            settingsStore,
+            properties,
+            mockk(relaxed = true),
+        ).run(arguments)
+
+        verify(exactly = 1) { authService.currentAccessToken() }
     }
 }

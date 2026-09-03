@@ -269,6 +269,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Download release JARs
         uses: actions/download-artifact@v4
         with:
@@ -282,10 +285,11 @@ jobs:
           path: dist/release
           merge-multiple: true
 
-      - name: Collect JARs and generate checksums
+      - name: Collect JARs, installer and generate checksums
         shell: bash
         run: |
           cp dist/release-jars/assets/*.jar dist/release/
+          cp scripts/install.sh dist/release/install.sh
           cd dist/release
           sha256sum * > SHA256SUMS
 

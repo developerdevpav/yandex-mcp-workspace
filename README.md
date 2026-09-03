@@ -4,6 +4,22 @@
 
 Репозиторий: [github.com/developerdevpav/yandex-mcp-workspace](https://github.com/developerdevpav/yandex-mcp-workspace). Подробная документация — [docs/](./docs/README.md).
 
+## Быстрая установка
+
+Для macOS и Linux выполните одну команду в интерактивном терминале:
+
+```bash
+curl -fsSL https://github.com/developerdevpav/yandex-mcp-workspace/releases/latest/download/install.sh | bash
+```
+
+Мастер определит ОС и архитектуру, предложит Tracker, Wiki или оба сервера, проверит
+контрольные суммы, установит приложения без `sudo`, проведёт через Yandex OAuth и подключит
+MCP к выбранным Codex, Claude и Cursor. Пароль аккаунта Яндекса вводится только на странице
+Яндекса в браузере.
+
+Повторный запуск команды обновляет приложения, сохраняя OAuth-профиль и стабильные пути
+`~/.local/bin/yandex-mcp-tracker` и `~/.local/bin/yandex-mcp-wiki`.
+
 ## Требования
 
 - отдельный архив Tracker или Wiki из [GitHub Releases](https://github.com/developerdevpav/yandex-mcp-workspace/releases/latest) — Java уже включена
@@ -19,7 +35,9 @@
 
 ## Авторизация
 
-Docker и установленная Java не обязательны. Tracker и Wiki распространяются отдельно: скачайте только нужный сервер либо оба архива. После распаковки выполните `setup` в любом установленном сервере. Например, в Linux для Tracker:
+При быстрой установке мастер сам запускает авторизацию. Для ручной установки Tracker и Wiki
+распространяются отдельно: скачайте только нужный сервер либо оба архива. После распаковки
+выполните `setup` в любом установленном сервере. Например, в Linux для Tracker:
 
 ```bash
 ./app/bin/yandex-mcp-tracker setup
